@@ -2,18 +2,30 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
 func main() {
-	var delayCount int = 10 // 倒计时10秒
-	ch := make(chan struct{})
-	go func(count int) {
-		for count > 0 {
-			time.Sleep(1 * time.Second)
-			fmt.Printf("%d seconds left!!!", count)
-			count--
+	abort := make(chan struct{})
+	tick := time.Tick(time.Second)
+	fmt.Println("按任意字符退出...")
+	// 退出
+	go func() {
+		os.Stdin.Read(make([]byte, 1))
+		abort <- struct{}{}
+	}()
+
+Loop:
+	for {
+		select {
+		case <-abort:
+			fmt.Println("send rocket immediately!!!")
+			break Loop
+		case theTime := <-tick:
+			fmt.Printf("tick[%s]...!!!\n", theTime.String())
+		default:
 		}
-		ch <- struct{}{}
-	}(delayCount)
+	}
+	fmt.Println("end!!!")
 }
