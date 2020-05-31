@@ -122,9 +122,6 @@
     
             <!--<div id="nav" style="width:10%;"> -->
             <div id="nav">
-                <a href="Service">SaasService入口</a>
-                <a href="Backend">SaasBackend入口</a>
-                <!--
                 <label>函数名:</label>
                 <select id="slt_func" onchange="funcChanged(this.options[this.options.selectedIndex].text);">
                 <option value ="default">--请选择函数名--</option>
@@ -140,10 +137,18 @@
                 <label>服务标识:</label>
                 <input id="sve_flag" type="text" value="SaasService"/>
                 <button class="yongyin" onclick="invoke_ice();" style="width:50px;">调用</button>
-            -->
                 <!--<button class="yongyin" onclick="get_funcs();" style="width:50px;">获取函数名</button> -->
             </div> 
 
+            <div id="section">
+                <div id="div_params" style="background-color:#EEEEEE;height:1000px;width:35%;float:left;">
+                <textarea class="params" style="height:100%;width:100%;float:left;"></textarea>
+                </div>
+
+                <div id="div_ret_str" style="background-color:rgb(114, 107, 107);height:1000px;width:65%;float:left;">
+                <textarea class="ret_str" style="height:100%;width:100%;float:left;"></textarea>
+                </div>
+            </div>
             <!--
             <div id="btn_call" style="float:right;">
             </div>

@@ -1,4 +1,4 @@
-module test
+module Gin
 
 go 1.14
 
