@@ -22,23 +22,26 @@ func defineRout(router *gin.Engine) {
 		service.POST("/call", func(c *gin.Context) {
 			funcName := c.PostForm("funcName")
 			params := c.PostForm("params")
+			flag := c.PostForm("flag")
 			ip := c.PostForm("ip")
-			strIP := ip
 			if !tools.IsIP(ip) {
-				strIP = fmt.Sprintf("ip[%s] is invalid!", ip)
+				strIP := fmt.Sprintf("ip[%s] is invalid!", ip)
+				c.JSON(http.StatusOK, gin.H{
+					"code": 0,
+					"info": strIP,
+				})
 			}
 			port := c.PostForm("port")
 			intPort, err := strconv.Atoi(port)
 			if err != nil || (intPort < 0 || intPort > 65535) {
 				intPort = -1
 			}
+
+			iceFlag := fmt.Sprintf("%s:default -h %s -p %d", flag, ip, intPort)
+			retStr := ice.Invoke(iceFlag, funcName, params)
 			c.JSON(http.StatusOK, gin.H{
-				"func_name": funcName,
-				"params":    params,
-				"code":      0,
-				"info":      "...",
-				"ip":        strIP,
-				"port":      intPort,
+				"code": 0,
+				"info": retStr,
 			})
 		})
 		service.GET("/funcParams", func(c *gin.Context) {
@@ -105,6 +108,17 @@ func defineRout(router *gin.Engine) {
 }
 
 func main() {
+	/*
+		iceFlag := "SaasService:default -h 192.168.2.77 -p 20071"
+		funcName := "Login"
+		inParams := `
+			{
+				"username":"admin",
+				"password" : "0192023a7bbd73250516f069df18b500"
+			}
+		`
+		fmt.Printf("Invoke:[%s]\n", ice.Invoke(iceFlag, funcName, inParams))
+	*/
 	router := gin.Default()
 	defineRout(router)
 	//fmt.Printf("%v\n", ice.ServiceFuncs.FuncMap)

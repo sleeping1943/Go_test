@@ -50,12 +50,12 @@ func (s SaasBackend) ParseIce(path string) {
 			}
 		}
 	}
-	i := 1
-	for k, v := range s.FuncMap {
-		fmt.Printf("[%d] key:%s value:%s\n", i, k, v)
-		i++
-	}
-	fmt.Printf("funcName.size:%d\n", len(s.FuncMap))
+	//i := 1
+	//for k, v := range s.FuncMap {
+	//	fmt.Printf("[%d] key:%s value:%s\n", i, k, v)
+	//	i++
+	//}
+	//fmt.Printf("funcName.size:%d\n", len(s.FuncMap))
 }
 
 // ParseParams : 解析函数的对应参数

@@ -18,7 +18,7 @@ const (
 	`
 )
 
-func test() {
+func invoke(iceFlag, funcName, inParams string) string {
 	hdll, err := syscall.LoadLibrary("./ice_invoke.dll")
 	if err != nil {
 		log.Fatal(err)
@@ -28,12 +28,12 @@ func test() {
 	invoke, err := syscall.GetProcAddress(hdll, "invoke")
 	if err != nil {
 		log.Fatal(err)
-		return
+		return ""
 	}
 	freeStr, err := syscall.GetProcAddress(hdll, "free_str")
 	if err != nil {
 		log.Fatal(err)
-		return
+		return ""
 	}
 	var nargs uintptr = 3
 	ret, _, _ := syscall.Syscall(uintptr(invoke),
@@ -55,17 +55,19 @@ func test() {
 		p = (*byte)(unsafe.Pointer(retStr)) // 获取指针的值，此时指针已经指向下一个char
 	}
 	name := string(data) // 将data转换为字符串
-	fmt.Printf("name:%s--\n", name)
+	//fmt.Printf("name:%s--\n", name)
 	nargs = 1
+	// freeStr:回收C内存
 	syscall.Syscall(uintptr(freeStr),
 		nargs,
 		uintptr(ret),
 		0,
 		0)
+	return name
 }
 
 func main() {
 	for i := 0; i < 10; i++ {
-		test()
+		fmt.Printf("invoke:[%s]\n", invoke(iceFlag, funcName, inParams))
 	}
 }

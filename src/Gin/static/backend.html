@@ -52,8 +52,9 @@
             func_name += '&flag='
             func_name += $('#svr_flag').val()
             $.post(post_url, func_name, function(data){
-                $('.ret_str').text(JSON.stringify(data, null, "\t"))
-                //alert(typeof data)
+                json_data = JSON.parse(data["info"])
+                json_str = JSON.stringify(json_data, null, "\t")
+                $('.ret_str').val(json_str)
             });
         }
 
@@ -66,7 +67,7 @@
                 for (var func_name in data) {
                     //alert(option_str);
                     if (func_name == "func_name") {
-                        $('.params').text(data[func_name])
+                        $('.params').val(data[func_name])
                         break;
                     }
                 }
@@ -131,11 +132,11 @@
                 <option value="audi">Audi</option>
                 </select>
                 <label>IP:</label>
-                <input id="ip" type="text"  value="127.0.0.1"/>
+                <input id="ip" type="text"  value="192.168.2.77"/>
                 <label>PORT:</label>
-                <input id="port" type="text" value="11111"/>
+                <input id="port" type="text" value="20071"/>
                 <label>服务标识:</label>
-                <input id="sve_flag" type="text" value="SaasService"/>
+                <input id="svr_flag" type="text" value="SaasBackend"/>
                 <button class="yongyin" onclick="invoke_ice();" style="width:50px;">调用</button>
                 <!--<button class="yongyin" onclick="get_funcs();" style="width:50px;">获取函数名</button> -->
             </div> 
