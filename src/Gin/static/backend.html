@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
     <script>
-        var get_funcs_url="http://localhost:8080/Backend/func"
-        var get_url="http://localhost:8080/Backend/funcParams"
-        var post_url="http://localhost:8080/Backend/call"
+        var get_funcs_url="http://192.168.2.77:8080/Backend/func"
+        var get_url="http://192.168.2.77:8080/Backend/funcParams"
+        var post_url="http://192.168.2.77:8080/Backend/call"
         // 页面加载完成时调用的函数
         $(document).ready(function(){
             get_funcs()
@@ -17,7 +17,6 @@
 
         function get_funcs() {
             $.post(get_funcs_url, function(data){
-                $('.ret_str').text(JSON.stringify(data))
                 $("#slt_func").empty();
                 $("#slt_func").append("<option value='default'>---请选择函数名---</option>"); 
                 for (var func_name in data) {
@@ -126,10 +125,6 @@
                 <label>函数名:</label>
                 <select id="slt_func" onchange="funcChanged(this.options[this.options.selectedIndex].text);">
                 <option value ="default">--请选择函数名--</option>
-                <option value ="volvo">Volvo111111111111111111111</option>
-                <option value ="saab">Saab</option>
-                <option value="opel">Opel</option>
-                <option value="audi">Audi</option>
                 </select>
                 <label>IP:</label>
                 <input id="ip" type="text"  value="192.168.2.77"/>
