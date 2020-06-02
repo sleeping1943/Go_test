@@ -7,4 +7,5 @@ type iceHelper interface {
 	ParseIce(path string)
 	ParseParams(path string)
 	ParseJSON(params string) string
+	ReplaceAddr()
 }

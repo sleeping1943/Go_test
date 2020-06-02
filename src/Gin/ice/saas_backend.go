@@ -1,8 +1,10 @@
 package ice
 
 import (
+	"Gin/conf"
 	"bufio"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 	"strings"
@@ -25,6 +27,7 @@ func init() {
 	fmt.Printf("init SaasBackendPath:[%s]\n", SaasBackendPath)
 	BackendFuncs.ParseIce(SaasBackendPath)
 	BackendFuncs.ParseParams(SaasBackendPath)
+	BackendFuncs.ReplaceAddr()
 }
 
 // ParseIce : 解析ice文件
@@ -50,12 +53,6 @@ func (s SaasBackend) ParseIce(path string) {
 			}
 		}
 	}
-	//i := 1
-	//for k, v := range s.FuncMap {
-	//	fmt.Printf("[%d] key:%s value:%s\n", i, k, v)
-	//	i++
-	//}
-	//fmt.Printf("funcName.size:%d\n", len(s.FuncMap))
 }
 
 // ParseParams : 解析函数的对应参数
@@ -159,4 +156,16 @@ func (s SaasBackend) ParseParams(path string) {
 		}
 	}
 	fmt.Printf("funcName.size:%d\n", len(s.FuncMap))
+}
+
+// ReplaceAddr : 解析模板中的地址
+func (s SaasBackend) ReplaceAddr() {
+	fd, err := os.OpenFile("./static/backend.html", os.O_CREATE|os.O_TRUNC, 666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	addr := fmt.Sprintf("%s:%d", conf.Conf.IP, conf.Conf.Port)
+	temp := template.Must(template.ParseFiles("./static/backend.tpl"))
+	temp.Execute(fd, addr)
+	fd.Close()
 }

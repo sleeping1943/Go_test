@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
     <script>
-        var get_funcs_url="http://localhost:8080/Backend/func"
-        var get_url="http://localhost:8080/Backend/funcParams"
-        var post_url="http://localhost:8080/Backend/call"
+        var get_funcs_url="http://{{.}}/Service/func"
+        var get_url="http://{{.}}/Service/funcParams"
+        var post_url="http://{{.}}/Service/call"
         // 页面加载完成时调用的函数
         $(document).ready(function(){
             get_funcs()
@@ -17,7 +17,7 @@
 
         function get_funcs() {
             $.post(get_funcs_url, function(data){
-                $('.ret_str').text(JSON.stringify(data))
+                //$('.ret_str').text(JSON.stringify(data))
                 $("#slt_func").empty();
                 $("#slt_func").append("<option value='default'>---请选择函数名---</option>"); 
                 for (var func_name in data) {
@@ -52,8 +52,9 @@
             func_name += '&flag='
             func_name += $('#svr_flag').val()
             $.post(post_url, func_name, function(data){
-                $('.ret_str').text(JSON.stringify(data))
-                //alert(typeof data)
+                json_data = JSON.parse(data["info"])
+                json_str = JSON.stringify(json_data, null, "\t")
+                $('.ret_str').val(json_str)
             });
         }
 
@@ -63,7 +64,13 @@
             var func_name = 'funcName='
             func_name += options.val()
             $.getJSON(get_url, func_name, function(data){
-                $('.params').text(JSON.stringify(data))
+                for (var func_name in data) {
+                    //alert(option_str);
+                    if (func_name == "func_name") {
+                        $('.params').val(data[func_name])
+                        break;
+                    }
+                }
             });
 		}
     </script>
@@ -92,7 +99,7 @@
             box-shadow:0px 1px 2px rgba(0,0,0,0.2);
             text-shadow:0px 1px 1px rgba(0,0,0,0.3);
             color:#080808;
-            border:0.2px solid #ff6122;
+            border:0.2px solid #acaaa9;
             background-repeat:repeat;
             background-size:auto;
             background-origin:padding-box;
@@ -125,11 +132,11 @@
                 <option value="audi">Audi</option>
                 </select>
                 <label>IP:</label>
-                <input id="ip" type="text"  value="127.0.0.1"/>
+                <input id="ip" type="text"  value="192.168.2.77"/>
                 <label>PORT:</label>
-                <input id="port" type="text" value="11111"/>
+                <input id="port" type="text" value="20071"/>
                 <label>服务标识:</label>
-                <input id="sve_flag" type="text" value="SaasBackend"/>
+                <input id="svr_flag" type="text" value="SaasService"/>
                 <button class="yongyin" onclick="invoke_ice();" style="width:50px;">调用</button>
                 <!--<button class="yongyin" onclick="get_funcs();" style="width:50px;">获取函数名</button> -->
             </div> 

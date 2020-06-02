@@ -1,8 +1,10 @@
 package ice
 
 import (
+	"Gin/conf"
 	"bufio"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 	"strings"
@@ -25,6 +27,7 @@ func init() {
 	fmt.Printf("init SaasServicePath:[%s]\n", SaasServicePath)
 	ServiceFuncs.ParseIce(SaasServicePath)
 	ServiceFuncs.ParseParams(SaasServicePath)
+	ServiceFuncs.ReplaceAddr()
 }
 
 // ParseIce : 解析ice文件
@@ -51,12 +54,6 @@ func (s SaasService) ParseIce(path string) {
 			}
 		}
 	}
-	//i := 1
-	//for k, v := range s.FuncMap {
-	//	fmt.Printf("[%d] key:%s value:%s\n", i, k, v)
-	//	i++
-	//}
-	//fmt.Printf("funcName.size:%d\n", len(s.FuncMap))
 }
 
 // ParseParams : 解析函数的对应参数
@@ -160,4 +157,16 @@ func (s SaasService) ParseParams(path string) {
 		}
 	}
 	fmt.Printf("funcName.size:%d\n", len(s.FuncMap))
+}
+
+// ReplaceAddr : 解析模板中的地址
+func (s SaasService) ReplaceAddr() {
+	fd, err := os.OpenFile("./static/service.html", os.O_CREATE|os.O_TRUNC, 666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	addr := fmt.Sprintf("%s:%d", conf.Conf.IP, conf.Conf.Port)
+	temp := template.Must(template.ParseFiles("./static/service.tpl"))
+	temp.Execute(fd, addr)
+	fd.Close()
 }

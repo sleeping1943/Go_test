@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Gin/conf"
 	"Gin/ice"
 	"Gin/tools"
 	"fmt"
@@ -113,5 +114,6 @@ func defineRout(router *gin.Engine) {
 func main() {
 	router := gin.Default()
 	defineRout(router)
-	router.Run()
+	addr := fmt.Sprintf("%s:%d", conf.Conf.IP, conf.Conf.Port)
+	router.Run(addr)
 }

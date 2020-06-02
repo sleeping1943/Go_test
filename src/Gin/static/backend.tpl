@@ -7,10 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
     <script>
-        var get_funcs_url="http://192.168.2.77:8080/Backend/func"
-        var get_url="http://192.168.2.77:8080/Backend/funcParams"
-        var post_url="http://192.168.2.77:8080/Backend/call"
-        
+        var get_funcs_url="http://{{.}}/Backend/func"
+        var get_url="http://{{.}}/Backend/funcParams"
+        var post_url="http://{{.}}/Backend/call"
+        // 页面加载完成时调用的函数
         $(document).ready(function(){
             get_funcs()
         });  
@@ -25,14 +25,14 @@
                     option_str += "'>"
                     option_str += func_name
                     option_str += "</option>"
-                    
+                    //alert(option_str);
                     $("#slt_func").append(option_str); 
                 }
             });
         }
-        
+        // 调用函数
         function invoke_ice() {
-            
+            //alert($("#slt_func").get(0).selectedIndex)
             if ($("#slt_func").get(0).selectedIndex == 0) {
                 alert("当前函数名无效，请选择函数名！")
                 return
@@ -57,14 +57,14 @@
             });
         }
 
-        
+        // 获取函数对应参数
         function funcChanged(tx){
             var options=$("#slt_func option:selected");
             var func_name = 'funcName='
             func_name += options.val()
             $.getJSON(get_url, func_name, function(data){
                 for (var func_name in data) {
-                    
+                    //alert(option_str);
                     if (func_name == "func_name") {
                         $('.params').val(data[func_name])
                         break;
@@ -120,7 +120,7 @@
             <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
             <h1 style="margin-bottom:0;">Ice测试工具</h1></div>
     
-            
+            <!--<div id="nav" style="width:10%;"> -->
             <div id="nav">
                 <label>函数名:</label>
                 <select id="slt_func" onchange="funcChanged(this.options[this.options.selectedIndex].text);">
@@ -133,7 +133,7 @@
                 <label>服务标识:</label>
                 <input id="svr_flag" type="text" value="SaasBackend"/>
                 <button class="yongyin" onclick="invoke_ice();" style="width:50px;">调用</button>
-                
+                <!--<button class="yongyin" onclick="get_funcs();" style="width:50px;">获取函数名</button> -->
             </div> 
 
             <div id="section">
@@ -145,7 +145,10 @@
                 <textarea class="ret_str" style="height:100%;width:100%;float:left;"></textarea>
                 </div>
             </div>
-            
+            <!--
+            <div id="btn_call" style="float:right;">
+            </div>
+            -->
             <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
             版权 © csleeping@163.com
             </div>
