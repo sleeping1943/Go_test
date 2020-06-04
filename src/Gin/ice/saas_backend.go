@@ -27,7 +27,7 @@ func init() {
 	fmt.Printf("init SaasBackendPath:[%s]\n", SaasBackendPath)
 	BackendFuncs.ParseIce(SaasBackendPath)
 	BackendFuncs.ParseParams(SaasBackendPath)
-	BackendFuncs.ReplaceAddr()
+	//BackendFuncs.ReplaceAddr()
 }
 
 // ParseIce : 解析ice文件

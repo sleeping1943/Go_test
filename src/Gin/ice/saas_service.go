@@ -27,7 +27,7 @@ func init() {
 	fmt.Printf("init SaasServicePath:[%s]\n", SaasServicePath)
 	ServiceFuncs.ParseIce(SaasServicePath)
 	ServiceFuncs.ParseParams(SaasServicePath)
-	ServiceFuncs.ReplaceAddr()
+	//ServiceFuncs.ReplaceAddr()
 }
 
 // ParseIce : 解析ice文件
