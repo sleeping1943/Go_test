@@ -1,16 +1,32 @@
 package ice
 
 import (
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"unsafe"
 )
 
-// Invoke : 调用方法invoke(iceFlag, funcName, inParams)
-func Invoke(iceFlag, funcName, inParams string) string {
-	hdll, err := syscall.LoadLibrary("./ice_invoke.dll")
+var Dir string
+
+func init() {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
+	}
+	Dir = strings.Replace(dir, "\\", "/", -1)
+	//fmt.Println("dir-----------------", dir)
+}
+
+// Invoke : 调用方法invoke(iceFlag, funcName, inParams)
+func Invoke(iceFlag, funcName, inParams string) string {
+	var dllPath = fmt.Sprintf("%s/ice_invoke.dll", Dir)
+	hdll, err := syscall.LoadLibrary(dllPath)
+	if err != nil {
+		log.Fatal(err, ":", dllPath)
 	}
 
 	defer syscall.FreeLibrary(hdll)
