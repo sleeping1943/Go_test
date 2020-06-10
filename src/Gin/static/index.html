@@ -56,6 +56,14 @@
             <div id="nav">
                 <a href="Service">SaasService入口</a>
                 <a href="Backend">SaasBackend入口</a>
+                <form name="myform" action="iceupload" method="post"
+                    enctype="multipart/form-data">
+                    File: <input type="file" name="myfile">
+                    <input type="submit" name="submit" value="Commit" onclick="location.href='/Service'">
+                </form>
+                <!--
+                    <a href="Upload">自定义入口</a>
+                -->
             </div> 
             <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
             版权 © csleeping@163.com
