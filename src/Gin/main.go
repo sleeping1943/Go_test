@@ -14,7 +14,7 @@ import (
 )
 
 // MapParams : 各个客户端上传缓存的参数信息 <ip, <funcName, funcParams>>
-var MapParams = make(map[string]map[string][]string)
+var MapParams = make(map[string]map[string]string)
 
 func defineStatic(router *gin.Engine) {
 	router.StaticFile("/", "./static/index.html")
@@ -127,7 +127,8 @@ func defineCustomize(router *gin.Engine) {
 	customize := router.Group("/Customize")
 	{
 		customize.POST("/func", func(c *gin.Context) {
-			if mapInfo, ok := MapParams[c.ClientIP()]; !ok {
+			mapInfo, ok := MapParams[c.ClientIP()]
+			if !ok {
 				tmpMap := make(map[string]string)
 				tmpMap["info"] = "error"
 				c.SecureJSON(http.StatusOK, tmpMap)
@@ -161,8 +162,15 @@ func defineCustomize(router *gin.Engine) {
 			})
 		})
 		customize.GET("/funcParams", func(c *gin.Context) {
+			clientIP := c.ClientIP()
+			mapInfos, ok := MapParams[clientIP]
+			// 不存在该客户端缓存函数信息
+			if !ok {
+				c.File("./static/error.html")
+				return
+			}
 			funcName := c.Query("funcName")
-			params, isExists := ice.ServiceFuncs.FuncMap[funcName]
+			params, isExists := mapInfos[funcName]
 			var retStr = params
 			if !isExists {
 				params = fmt.Sprintf("func[%s] is not exists!", funcName)
@@ -200,7 +208,9 @@ func defineUpload(router *gin.Engine) {
 		ice.CustomizeFuncs.ParseParamsByFile(content, mapFunc)
 		fmt.Printf("%v \nsize:%d\n", mapFunc, len(content))
 		clientIP := c.ClientIP()
+		MapParams[clientIP] = mapFunc
 		fmt.Println(clientIP)
+		// 返回自定义页面
 		c.File("./static/customize.html")
 	})
 }
