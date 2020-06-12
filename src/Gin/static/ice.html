@@ -45,17 +45,25 @@
         }
     </style>
     <head>
-    <title>工具(made by sleeping)</title> 
+    <title>Ice测试工具(made by sleeping)</title> 
     </head>
     <body>
         <div id="container">
 
             <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
-            <h1 style="margin-bottom:0;">工具</h1></div>
+            <h1 style="margin-bottom:0;">Ice测试工具</h1></div>
     
             <div id="nav">
-                <a href="Ice">Ice调用入口</a>
-                <a href="Project">工程配置入口</a>
+                <a href="Service">SaasService入口</a>
+                <a href="Backend">SaasBackend入口</a>
+                <form name="myform" action="iceupload" method="post"
+                    enctype="multipart/form-data">
+                    File: <input type="file" name="myfile">
+                    <input type="submit" name="submit" value="Commit" onclick="location.href='/Service'">
+                </form>
+                <!--
+                    <a href="Upload">自定义入口</a>
+                -->
             </div> 
             <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
             版权 © csleeping@163.com

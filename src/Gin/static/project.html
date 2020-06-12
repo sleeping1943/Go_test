@@ -5,7 +5,18 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
-    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script>
+    <script>
+        function rebuild() {
+            var path = $("#project_path").val()
+            path = "path=" + path
+            $.post("Project/rebuild", path, function(data){
+                //json_data = JSON.parse(data["info"])
+                //alert(data["info"])
+                $('#ret_str').text(data["info"])
+            });
+        }
+     </script> 
     <style type="text/css">
         html,body{
             height:100%;
@@ -45,18 +56,23 @@
         }
     </style>
     <head>
-    <title>工具(made by sleeping)</title> 
+    <title>发布工具(made by sleeping)</title> 
     </head>
     <body>
         <div id="container">
 
             <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
-            <h1 style="margin-bottom:0;">工具</h1></div>
+            <h1 style="margin-bottom:0;">发布工具</h1></div>
     
             <div id="nav">
-                <a href="Ice">Ice调用入口</a>
-                <a href="Project">工程配置入口</a>
+                <label>请输入工程路径:</label>
+                <input type="text" id="project_path">
+                <button class="yongyin" onclick="rebuild();" style="width:50px;">重建</button>
             </div> 
+            <div>ret:<label id="ret_str"></label></div>
+                <!--
+                    <a href="Upload">自定义入口</a>
+                -->
             <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
             版权 © csleeping@163.com
             </div>

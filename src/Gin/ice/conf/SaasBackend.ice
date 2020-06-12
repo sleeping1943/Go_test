@@ -425,7 +425,7 @@ module Saas
                 "cmd": "SubscribeInform",   必填,string,业务类型,新购:Subscribe,订购通知:SubscribeInform,续订:Renew
                 "instance_id": "",      必填,string,实例ID
                 "order_id": "",         必填,string,订单ID
-                "pricing_id": "",       必填,string,套餐ID,如:wisdomwatch0000001
+                "pricing_id": "wisdomwatch0000001",       必填,string,套餐ID,如:wisdomwatch0000001
                 "pricing_name": "",     必填,string,套餐描述
                 "count": "",            必填,string,订购的数量，需求讨论结果只能是1
                 "volume": "",           必填,string,订购的周期，单位：月
