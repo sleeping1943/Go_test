@@ -292,16 +292,30 @@ func defineProject(router *gin.Engine) {
 			path := c.PostForm("path")
 			path = strings.Replace(path, "\\", "/", -1)
 			retStr := "成功-" + time.Now().Format("2006-01-02 15:04:05")
+			// 检车文件目录是否存在
+			// 然后删除builds/vs2015文件夹下的所有文件
+			// 创建build/vs2015文件夹
+			// 建立cmake的windows工程
+			// 遍历得到.sln文件路径
+			// devenv.com 打开工程
+			// CmakeCmd = `cmake ../.. -G "Visual Studio 14 2015 Win64"`
 		Loop:
 			for {
-				buildPath := fmt.Sprintf("%s/builds/vs2015", path)
-				_, err := os.Stat(path)
+				fileInfo, err := os.Stat(path)
+				// 路径不存在
 				if err != nil {
-					err = os.MkdirAll(buildPath, os.ModePerm)
-					if err != nil {
-						retStr = fmt.Sprintf("%s 创建失败", buildPath)
-						break
-					}
+					retStr = fmt.Sprintf("%s 打开失败", path)
+					break
+				}
+				if !fileInfo.IsDir() {
+					retStr = fmt.Sprintf("%s 不是一个文件夹", path)
+					break
+				}
+				buildPath := fmt.Sprintf("%s/builds/vs2015", path)
+				err = os.MkdirAll(buildPath, os.ModePerm)
+				if err != nil {
+					retStr = fmt.Sprintf("%s 创建失败", buildPath)
+					break
 				}
 				file, err := os.Open(buildPath)
 				if err != nil {
@@ -329,12 +343,6 @@ func defineProject(router *gin.Engine) {
 					retStr = fmt.Sprintf("切换到目录[%s] 出错", path)
 					break
 				}
-				// 然后删除builds/vs2015文件夹下的所有文件
-				// 创建build/vs2015文件夹
-				// 建立cmake的windows工程
-				// 遍历得到.sln文件路径
-				// devenv.com 打开工程
-				// CmakeCmd = `cmake ../.. -G "Visual Studio 14 2015 Win64"`
 				go func() {
 					cmd := exec.Command("cmake", "../..", "-G", "Visual Studio 14 2015 Win64")
 					err := cmd.Run()
