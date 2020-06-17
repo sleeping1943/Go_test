@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // 编译单个项目命令:
@@ -31,12 +28,13 @@ type ProjectComplier struct {
 var SlnConfig ReleaseConfig
 
 func init() {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal(err)
-	}
-	dir = strings.Replace(dir, "\\", "/", -1)
-	dir = fmt.Sprintf("%s/conf/release.json", dir)
+	//dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//dir = strings.Replace(dir, "\\", "/", -1)
+	//dir = fmt.Sprintf("%s/conf/release.json", dir)
+	dir := "./conf/release.json"
 	content, err := ioutil.ReadFile(dir)
 	if err != nil {
 		log.Fatal(err)

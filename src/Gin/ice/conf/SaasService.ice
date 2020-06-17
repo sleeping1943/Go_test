@@ -117,6 +117,7 @@ module Saas
         /**
          * @brief  QueryUserList 查询授权用户列表
          * @since  2020/05/06
+         * @update 2020/05/12
          *
          * @param cond 查询条件。
             example:
@@ -145,6 +146,7 @@ module Saas
                             "name": "zhangsan",         string,姓名
                             "state": 1,                 int,用户状态
                             "mobile": "13300000001",    string,手机号码
+                            "email": "x",               string,邮箱
                             "site_list": "",            string,关联店铺id列表,ALL表示所有店铺
                             "permission": "",           string,权限信息
                         },...
@@ -154,7 +156,59 @@ module Saas
             失败 - {"code": <非0>, "message": "错误说明", "visible": false}
         */
         void QueryUserList(string cond, out string result);
+        
+        /**
+         * @brief  ChangePassword 修改密码
+         * @since  2020/06/03
+         *
+         * @param cond 修改信息。
+            example:
+            {
+                "user_id": 0,           必填,int,用户ID
+                "password": "x",        必填,string,新密码,MD5加密的密码。
+                "old_password": "x",    必填,string,原密码,MD5加密的密码。
+                "operator": "jobs",     必填,string,操作者，即当前登录的账号。
+            }
+         * @param result 成功或失败。例：
+            成功 - {"code": 0}
+            失败 - {"code": <非0>, "message": "错误说明", "visible": false}
+        */
+        void ChangePassword(string cond, out string result);
 
+        /**
+         * @brief  ResetPassword 重置密码
+         * @since  2020/05/12
+         *
+         * @param cond 重置信息。
+            example:
+            {
+                "user_id": 0,           必填,int,用户ID
+                "password": "x",        必填,string,新密码,MD5加密的密码。
+                "operator": "jobs",     必填,string,操作者，即当前登录的账号。
+            }
+         * @param result 成功或失败。例：
+            成功 - {"code": 0}
+            失败 - {"code": <非0>, "message": "错误说明", "visible": false}
+        */
+        void ResetPassword(string cond, out string result);
+
+        /**
+         * @brief  ResetEmail 重置邮箱
+         * @since  2020/05/12
+         *
+         * @param cond 重置信息。
+            example:
+            {
+                "user_id": 0,           必填,int,用户ID
+                "password":"x",         必填,string,MD5加密的密码。
+                "email": "x",           必填,string,新邮箱
+                "operator": "jobs",     必填,string,操作者，即当前登录的账号。
+            }
+         * @param result 成功或失败。例：
+            成功 - {"code": 0}
+            失败 - {"code": <非0>, "message": "错误说明", "visible": false}
+        */
+        void ResetEmail(string cond, out string result);
 
         /*----------------------------------------------------------------------
           组织地点管理
@@ -444,6 +498,7 @@ module Saas
                 "group": 1,             选填,int,黑白名单类型，参见《BlackWhiteList》
                 "birthday": "",         选填,string,出生日期
                 "mobile": "13900000000",选填,string,手机号
+                "email": "xx@xx.com",   选填,string,邮箱
                 "company": "",          选填,string,所在单位
                 "position": "",         选填,string,职位
                 "effective": "",        选填,string,有效时间-开始时间（生效）
@@ -458,7 +513,9 @@ module Saas
             for property
             1. 员工
             {
-                "rule_id": 1,     必填,int,考勤规则id
+                "rule_id": 1,       必填,int,考勤规则id
+                "empno": 1,         选填,int,员工工号
+                "hiredate": "xx"    选填,string,入职时间
             }
             2. VIP
             {
@@ -487,6 +544,7 @@ module Saas
                 "group": 1,             选填,int,黑白名单类型，参见《BlackWhiteList》
                 "birthday": "",         选填,string,出生日期
                 "mobile": "13900000000",选填,string,手机号
+                "email": "xx@xx.com",   选填,string,邮箱
                 "company": "",          选填,string,所在单位
                 "position": "",         选填,string,职位
                 "effective": "",        选填,string,有效时间-开始时间（生效）
@@ -501,7 +559,9 @@ module Saas
             for property
             1. 员工
             {
-                "rule_id": 1,     必填,int,考勤规则id
+                "rule_id": 1,        必填,int,考勤规则id
+                "empno": 1,         选填,int,员工工号
+                "hiredate": "xx"    选填,string,入职时间
             }
             2. VIP
             {
@@ -574,6 +634,7 @@ module Saas
                     "group": 1,         // 黑白名单类型，参见《BlackWhiteList》
                     "birthday": "",     // 出生日期
                     "mobile": "",       // 手机号
+                    "email": "",        // 邮箱
                     "company": "",      // 所在单位
                     "position": "",     // 职位
                     "effective": "",    // 有效时间-开始时间（生效）
@@ -637,6 +698,7 @@ module Saas
                             "group": 1,         // 黑白名单类型，参见《BlackWhiteList》
                             "birthday": "",     // 出生日期
                             "mobile": "",       // 手机号
+                            "email": "",        // 邮箱
                             "company": "",      // 所在单位
                             "position": "",     // 职位
                             "effective": "",    // 有效时间-开始时间（生效）
@@ -922,7 +984,7 @@ module Saas
 
         /**
          * @brief  UpdateCameraConfig 修改抓拍机配置
-         * @since  2020/05/25
+         * @since  2020/06/15
          *
          * @param cond 查询条件。
             example:
@@ -932,6 +994,15 @@ module Saas
                 "config": "{}",         必填,string,设备配置,json格式
                 "operator": "jobs",     必填,string,操作者，即当前登录的账号。
             }
+
+            config格式如下:
+            {
+                "detect_interval":5,    // int,抓拍间隔,单位/秒
+                "angle_pitch": 20.0,    // float,人脸俯仰角
+                "angle_yaw": 20.0,      // float,人脸偏航角
+                "angle_roll": 20.0,     // float,人脸滚转角
+                "keypoints_confidence": 7   // float,人脸关键点可信度，范围0.0~100.0
+            }
          * @param result 成功或失败。例：
             成功 - {"code": 0}
             失败 - {"code": <非0>, "message": "错误说明", "visible": false}
@@ -939,8 +1010,25 @@ module Saas
         void UpdateCameraConfig(string cond, out string result);
 
         /**
+         * @brief  ResetCameraConfig 重置抓拍机配置为默认
+         * @since  2020/06/15
+         *
+         * @param cond 查询条件。
+            example:
+            {
+                "org_id": 1,            必填,int,组织id
+                "camera_id": 1,         必填,int,设备id
+                "operator": "jobs",     必填,string,操作者，即当前登录的账号。
+            }
+         * @param result 成功或失败。例：
+            成功 - {"code": 0}
+            失败 - {"code": <非0>, "message": "错误说明", "visible": false}
+        */
+        void ResetCameraConfig(string cond, out string result);
+
+        /**
          * @brief  QueryCameraConfig 查询抓拍机配置
-         * @since  2020/05/25
+         * @since  2020/06/15
          *
          * @param cond 查询条件。
             example:
@@ -953,7 +1041,7 @@ module Saas
             成功 - 返回对应的结果
             {
                 "code": 0,
-                "info": "{}"    string,json格式设备配置
+                "info": "{}"    string,json格式设备配置,详细格式见UpdateCameraConfig的config格式
             }
             失败 - {"code": <非0>, "message": "错误说明", "visible": false}
         */
@@ -981,7 +1069,8 @@ module Saas
                     "customer_id": "",          // 客人ID
                     "people_id": 1,             // 人员ID
                     "name": "xx"                // 人员姓名
-                    "type": 1,                  // 人员类型
+                    "type": 1,                  // 人员类型，参见《PeopleType》
+                    "group": 1,                 // 黑白名单类型，参见《BlackWhiteList》
                     "credential_no": "xx"       // 证件号
                     "age": 1,                   // 性别
                     "sex": 1,                   // 年龄

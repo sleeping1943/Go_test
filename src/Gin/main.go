@@ -18,6 +18,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// RootPath : 项目根路径
+var RootPath string
+
 // MapParams : 各个客户端上传缓存的参数信息 <ip, <funcName, funcParams>>
 var MapParams = make(map[string]map[string]string)
 
@@ -75,6 +78,10 @@ func ReciveCh() {
 						}
 						break
 					}
+				}
+				err = os.Chdir(RootPath)
+				if err != nil {
+					Error.Printf("change dir error:%s\n", RootPath)
 				}
 			}
 		}
@@ -337,15 +344,15 @@ func defineProject(router *gin.Engine) {
 					}
 				}
 
-				// 切换到builds/vs2015目录下
-				err = os.Chdir(buildPath)
-				if err != nil {
-					retStr = fmt.Sprintf("切换到目录[%s] 出错", path)
-					break
-				}
 				go func() {
+					// 切换到builds/vs2015目录下
+					err := os.Chdir(buildPath)
+					if err != nil {
+						Error.Printf("change dir error[%s]\n", buildPath)
+						return
+					}
 					cmd := exec.Command("cmake", "../..", "-G", "Visual Studio 14 2015 Win64")
-					err := cmd.Run()
+					err = cmd.Run()
 					if err != nil {
 						Error.Printf("cmd execute err:%s\n", err.Error())
 					}
@@ -373,6 +380,12 @@ func defineRout(router *gin.Engine) {
 }
 
 func main() {
+	rootPath, err := os.Getwd()
+	if err != nil {
+		Error.Printf("获取当前目录出错:%s\n", err.Error())
+		return
+	}
+	RootPath = rootPath
 	ReciveCh()
 	Error.Println("test")
 	router := gin.Default()
