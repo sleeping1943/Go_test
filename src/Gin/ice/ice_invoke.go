@@ -1,7 +1,6 @@
 package ice
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,7 +22,8 @@ func init() {
 
 // Invoke : 调用方法invoke(iceFlag, funcName, inParams)
 func Invoke(iceFlag, funcName, inParams string) string {
-	var dllPath = fmt.Sprintf("%s/ice_invoke.dll", Dir)
+	//var dllPath = fmt.Sprintf("%s/ice_invoke.dll", Dir)
+	dllPath := "./ice_invoke.dll"
 	hdll, err := syscall.LoadLibrary(dllPath)
 	if err != nil {
 		log.Fatal(err, ":", dllPath)

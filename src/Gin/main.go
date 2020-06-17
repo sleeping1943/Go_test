@@ -337,6 +337,20 @@ func defineProject(router *gin.Engine) {
 					}
 				}
 
+				curWorkDir, err := os.Getwd()
+				if err != nil {
+					retStr = fmt.Sprintf("获取当前目录出错:%s", err.Error())
+					break
+				}
+
+				// 切换到初始根目录下
+				defer func(wd string) {
+					err := os.Chdir(buildPath)
+					if err != nil {
+						Error.Printf("open vs project err:%s\n", err.Error())
+					}
+				}(curWorkDir)
+
 				// 切换到builds/vs2015目录下
 				err = os.Chdir(buildPath)
 				if err != nil {

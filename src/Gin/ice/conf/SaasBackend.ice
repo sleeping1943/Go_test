@@ -205,6 +205,7 @@ module Saas
          * @brief  LockUser 锁定/解锁用户
          * @since  2020/04/10
          * @update 2020/05/07
+         * @update 2020/05/12
          *
          * @param user 用户信息。
             example:
@@ -250,6 +251,7 @@ module Saas
                             "username": "xx",   string,用户姓名
                             "mobile": "",       string,手机号
                             "state": 0,         int,用户状态
+                            "email": "x",       string,邮箱
                             "org_id": 1,        int,组织ID
                             "site_count": 1,    int,组织地点数量
                         }, ...
@@ -425,7 +427,7 @@ module Saas
                 "cmd": "SubscribeInform",   必填,string,业务类型,新购:Subscribe,订购通知:SubscribeInform,续订:Renew
                 "instance_id": "",      必填,string,实例ID
                 "order_id": "",         必填,string,订单ID
-                "pricing_id": "wisdomwatch0000001",       必填,string,套餐ID,如:wisdomwatch0000001
+                "pricing_id": "",       必填,string,套餐ID,如:wisdomwatch0000001
                 "pricing_name": "",     必填,string,套餐描述
                 "count": "",            必填,string,订购的数量，需求讨论结果只能是1
                 "volume": "",           必填,string,订购的周期，单位：月
