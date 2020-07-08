@@ -62,7 +62,6 @@ func ReciveCh() {
 					Error.Printf("open vs project err:%s\n", err.Error())
 					continue
 				}
-				defer file.Close()
 				files, err := file.Readdirnames(0)
 				if err != nil {
 					Error.Printf("readdirnames err:%s\n", err.Error())
@@ -83,6 +82,9 @@ func ReciveCh() {
 				if err != nil {
 					Error.Printf("change dir error:%s\n", RootPath)
 				}
+				// 关闭文件夹的占用，否则不能删除
+				file.Close()
+				Error.Printf("close %s\n", path)
 			}
 		}
 	}()
@@ -358,12 +360,6 @@ func defineProject(router *gin.Engine) {
 					}
 				}(curWorkDir)
 
-				// 切换到builds/vs2015目录下
-				err = os.Chdir(buildPath)
-				if err != nil {
-					retStr = fmt.Sprintf("切换到目录[%s] 出错", path)
-					break
-				}
 				go func() {
 					// 切换到builds/vs2015目录下
 					err := os.Chdir(buildPath)
@@ -407,7 +403,6 @@ func main() {
 	}
 	RootPath = rootPath
 	ReciveCh()
-	Error.Println("test")
 	router := gin.Default()
 	defineRout(router)
 	addr := fmt.Sprintf("%s:%d", conf.Conf.IP, conf.Conf.Port)
