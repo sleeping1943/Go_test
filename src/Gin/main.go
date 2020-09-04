@@ -280,12 +280,18 @@ func defineUpload(router *gin.Engine) {
 		content := make([]string, fileReader.Size)
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			content = append(content, scanner.Text())
+			line := strings.TrimSpace(scanner.Text())
+			if len(line) > 0 {
+				content = append(content, line)
+			}
 		}
+		// 目标文件内从转为utf8编码
+		utf8Content := strings.Join(content, "\r\n")
+		utf8Content = tools.TransUTF8(utf8Content)
 		mapFunc := make(map[string]string)
+		content = strings.Split(utf8Content, "\r\n")
 		ice.CustomizeFuncs.ParseIceByFile(content, mapFunc)
 		ice.CustomizeFuncs.ParseParamsByFile(content, mapFunc)
-		//fmt.Printf("%v \nsize:%d\n", mapFunc, len(content))
 		clientIP := c.ClientIP()
 		MapParams[clientIP] = mapFunc
 		//fmt.Println(clientIP)
@@ -386,6 +392,11 @@ func defineProject(router *gin.Engine) {
 	}
 }
 
+// 其余请求
+func defineOther(router *gin.Engine) {
+	router.StaticFile("/Video", "./conf/video.json")
+}
+
 func defineRout(router *gin.Engine) {
 	defineStatic(router)
 	defineService(router)
@@ -393,6 +404,7 @@ func defineRout(router *gin.Engine) {
 	defineCustomize(router)
 	defineUpload(router)
 	defineProject(router)
+	defineOther(router)
 }
 
 func main() {

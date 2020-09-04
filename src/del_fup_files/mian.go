@@ -10,6 +10,7 @@ import (
 
 // FileMap : 文件名，slice文件路径
 var FileMap map[string][]string
+var Index = 0
 
 // ScanFolder : 扫描指定目录的重复文件
 func ScanFolder(filePath string, index int) {
@@ -24,6 +25,8 @@ func ScanFolder(filePath string, index int) {
 		FileMap[fileName] = append(FileMap[fileName], filePath)
 		return
 	}
+	// 改名
+	newName := strings.End
 	//_, exist := FileMap[fileName]
 	//if exist {
 	//	FileMap[fileName] = append(FileMap[fileName], filePath)
