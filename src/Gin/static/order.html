@@ -11,37 +11,29 @@
         var get_url="Backend/funcParams"
         var post_url="Backend/call"
         
+
         $(document).ready(function(){
-            get_funcs()
+            json_data = 
+            `{
+                "cmd": "SubscribeInform",
+                "instance_id": "",
+                "order_id": "",
+                "pricing_id": "wisdomwatch0000002",
+                "pricing_name": "",
+                "count": "1",
+                "volume": "",
+                "expire_date": "",
+                "mobile": "",
+                "operator": "admin"
+            }`
+            json_str = JSON.stringify(json_data, null, "\n")
+            $('.params').val(
+                json_data
+            )
         });  
 
-        function get_funcs() {
-            $.post(get_funcs_url, function(data){
-                $("#slt_func").empty();
-                $("#slt_func").append("<option value='default'>---请选择函数名---</option>"); 
-                for (var func_name in data) {
-                    var option_str = "<option value='"
-                    option_str += func_name
-                    option_str += "'>"
-                    option_str += func_name
-                    option_str += "</option>"
-                    
-                    $("#slt_func").append(option_str); 
-                }
-            });
-        }
-        
         function invoke_ice() {
-            
-            if ($("#slt_func").get(0).selectedIndex == 0) {
-                alert("当前函数名无效，请选择函数名！")
-                return
-            }
-            var func_name = 'funcName='
-            var options=$("#slt_func option:selected");
-            var func_name = 'funcName='
-
-            func_name += options.val()
+            var func_name = 'funcName=AddOrder'
             func_name += '&params='
             func_name += $('.params').val()
             func_name += '&ip='
@@ -56,22 +48,6 @@
                 $('.ret_str').val(json_str)
             });
         }
-
-        
-        function funcChanged(tx){
-            var options=$("#slt_func option:selected");
-            var func_name = 'funcName='
-            func_name += options.val()
-            $.getJSON(get_url, func_name, function(data){
-                for (var func_name in data) {
-                    
-                    if (func_name == "func_name") {
-                        $('.params').val(data[func_name])
-                        break;
-                    }
-                }
-            });
-		}
     </script>
     <style type="text/css">
         html,body{
@@ -118,14 +94,8 @@
         <div id="container">
 
             <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
-            <h1 style="margin-bottom:0;">赛达Backend端Ice测试工具(made by sleeping)</h1></div>
-    
-            
+            <h1 style="margin-bottom:0;">赛达添加订单工具(made by sleeping)</h1></div>
             <div id="nav">
-                <label>函数名:</label>
-                <select id="slt_func" onchange="funcChanged(this.options[this.options.selectedIndex].text);">
-                <option value ="default">--请选择函数名--</option>
-                </select>
                 <label>IP:</label>
                 <input id="ip" type="text"  value="192.168.2.77"/>
                 <label>PORT:</label>

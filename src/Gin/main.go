@@ -6,20 +6,27 @@ import (
 	_ "Gin/sln"
 	"Gin/tools"
 	"bufio"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
 )
 
 // RootPath : 项目根路径
 var RootPath string
+
+var packConfigName = "remoupack.json"
 
 // MapParams : 各个客户端上传缓存的参数信息 <ip, <funcName, funcParams>>
 var MapParams = make(map[string]map[string]string)
@@ -39,6 +46,22 @@ var (
 	Error *log.Logger
 )
 
+// PackInfo : 打包exe程序配置
+type PackInfo struct {
+	RebuildPro  bool              `json:"rebuildPro"`
+	RebuildExe  bool              `json:"rebuildExe"`
+	ProjectPath string            `json:"projectPath"`
+	CodePath    string            `json:"codePath"`
+	BuildParams map[string]string `json:"buildParams"`
+	ExeName     string            `json:"exeName"`
+	PdbName     string            `json:"pdbName"`
+	NsiPath     string            `json:"nsiPath"`
+	NsiParams   map[string]string `json:"nsiParams"`
+	RebuildPack bool              `json:"rebuildPack"`
+}
+
+var defaultPackInfo PackInfo
+
 func init() {
 	errFile, err := os.OpenFile("./errors.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
@@ -49,6 +72,16 @@ func init() {
 	Warning = log.New(os.Stdout, "Warning:", log.Ldate|log.Ltime|log.Lshortfile)
 	//Error = log.New(io.MultiWriter(os.Stderr, errFile), "Error:", log.Ldate|log.Ltime|log.Lshortfile)
 	Error = log.New(errFile, "Error:", log.Ldate|log.Ltime|log.Lshortfile)
+
+	// 解析默认的打包配置
+	byteContent, err := ioutil.ReadFile("./" + packConfigName)
+	if err != nil {
+		Error.Println("open file error:", err.Error())
+	}
+	err = json.Unmarshal(byteContent, &defaultPackInfo)
+	if err != nil {
+		Error.Println("parse pack.json error:", err.Error())
+	}
 }
 
 // ReciveCh : ch接收器
@@ -97,6 +130,8 @@ func defineStatic(router *gin.Engine) {
 	router.StaticFile("/Service", "./static/service.html")
 	router.StaticFile("/Backend", "./static/backend.html")
 	router.StaticFile("/Upload", "./static/upload.html")
+	router.StaticFile("/Order", "./static/order.html")
+	router.StaticFile("/Pack", "./static/pack.html")
 }
 
 func defineService(router *gin.Engine) {
@@ -392,6 +427,141 @@ func defineProject(router *gin.Engine) {
 	}
 }
 
+func definePack(router *gin.Engine) {
+	packEngine := router.Group("/Pack")
+	{
+		packEngine.POST("/remou", func(c *gin.Context) {
+			var retStr = "Successfully"
+			for {
+				configJSON := c.PostForm("configJson")
+				var byteConfigJSON = []byte(configJSON)
+				err := json.Unmarshal(byteConfigJSON, &defaultPackInfo)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+
+				fmt.Printf("%v\n", defaultPackInfo)
+				file, err := os.Open("./" + packConfigName)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				defer file.Close()
+				err = ioutil.WriteFile("./"+packConfigName, byteConfigJSON, os.ModePerm)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				// 异步开启打包程序
+				go func() {
+					cmd := exec.Command("./pack/remoupack.exe")
+					err := cmd.Run()
+					if err != nil {
+						retStr := err.Error()
+						fmt.Println("Command Run error:", retStr)
+						return
+					}
+					//output, err := cmd.Output()
+					//if err != nil {
+					//	retStr := err.Error()
+					//	fmt.Println("Command Output error:", retStr)
+					//	return
+					//}
+					//fmt.Printf("output:%v\n", output)
+				}()
+
+				break
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": 0,
+				"info": retStr,
+			})
+		})
+		packEngine.POST("/config", func(c *gin.Context) {
+			byteConfig, err := ioutil.ReadFile("./" + packConfigName)
+			var errcode = 0
+			if err != nil {
+				errcode = -1
+				Error.Println("get default pack config error:", err.Error())
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code":   errcode,
+				"config": string(byteConfig),
+			})
+		})
+
+		packEngine.POST("/changeLog", func(c *gin.Context) {
+			var retStr = "修改日志成功"
+			for {
+				version := c.PostForm("version")
+				configJSON := c.PostForm("configJson")
+				logContent := c.PostForm("logContent")
+				color.HiRed(fmt.Sprintf("logConent:%s\n", logContent))
+				byteLogContent, err := base64.StdEncoding.DecodeString(logContent)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				logContent, err = url.QueryUnescape(string(byteLogContent))
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				color.HiGreen(logContent)
+				var byteConfigJSON = []byte(configJSON)
+				err = json.Unmarshal(byteConfigJSON, &defaultPackInfo)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+
+				logFileName := defaultPackInfo.ProjectPath + "/" + version
+				err = ioutil.WriteFile(logFileName, []byte(logContent), os.ModePerm)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				color.HiYellow(fmt.Sprintf("retStr:%s\n", retStr))
+				break
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": 0,
+				"info": retStr,
+			})
+		})
+
+		packEngine.POST("/readLog", func(c *gin.Context) {
+			var retStr = "Successfully"
+			for {
+				version := c.PostForm("version")
+				configJSON := c.PostForm("configJson")
+				var byteConfigJSON = []byte(configJSON)
+				err := json.Unmarshal(byteConfigJSON, &defaultPackInfo)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+
+				logFileName := defaultPackInfo.ProjectPath + "/" + version
+
+				byteContent, err := ioutil.ReadFile(logFileName)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				retStr = string(byteContent)
+				break
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": 0,
+				"info": retStr,
+			})
+		})
+	}
+}
+
 // 其余请求
 func defineOther(router *gin.Engine) {
 	router.StaticFile("/Video", "./conf/video.json")
@@ -405,6 +575,7 @@ func defineRout(router *gin.Engine) {
 	defineUpload(router)
 	defineProject(router)
 	defineOther(router)
+	definePack(router)
 }
 
 func main() {

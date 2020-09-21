@@ -5,7 +5,13 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
-    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js">
+        function invoke_ice() {
+            $.post("Pack/saida", func_name, function(data){
+                json_data = JSON.parse(data["info"])
+            });
+        }
+    </script> 
     <style type="text/css">
         html,body{
             height:100%;
@@ -53,9 +59,12 @@
             <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
             <h1 style="margin-bottom:0;">工具</h1></div>
     
-            <div><a href="Ice">Ice调用入口</a></div>
-            <div><a href="Project">工程配置入口</a></div> 
-            <div><a href="Video" target="_blank"> 查询摄像头信息</a></div> 
+            <div><a href="Order" target="_blank">添加订单</a></div> 
+            <br/>
+            <div><a href="Ice" target="_blank">Ice调用入口</a></div>
+            <div><a href="Project" target="_blank">工程配置入口</a></div> 
+            <div><a href="Video" target="_blank">查询摄像头信息</a></div> 
+            <div><a href="Pack" target="_blank" color="red">HOT！热眸系列自动打包程序</a></div> 
             <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
             版权 © csleeping@163.com
             </div>

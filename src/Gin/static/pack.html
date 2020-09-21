@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
+    <script>
+        var config_url = "Pack/config"
+        var post_url="Pack/remou"
+        var change_log_url="Pack/changeLog"
+        var read_log_url="Pack/readLog"
+        function isJSON(str) {
+            if (typeof str == 'string') {
+                try {
+                    JSON.parse(str);
+                    return true;
+                } catch(e) {
+                    console.log(e);
+                    return false;
+                }
+            }
+            console.log('It is not a string!')    
+        }
+
+        // 发送打包命令
+        function pack() {
+            paramJson = $('.pack_config').val()
+            //alert(paramJson)
+            if (!isJSON(paramJson)) {
+                alert("请检查是否是合法的json格式")
+                return
+            }
+            var params = "configJson=" + paramJson
+            $.post(post_url, params, function(data){
+                json_str = data["info"]
+                $('.ret_str').val(json_str)
+            });
+        }
+
+        // 获取默认配置
+        function get_default_pack_config() {
+            $.post(config_url, "project=saida", function(data){
+                json_str = data["config"]
+                $('.pack_config').val(json_str)
+            });
+        }
+        $(document).ready(function(){
+            get_default_pack_config()
+        });  
+
+        // 修改发布的改动日志
+        function modifyLog() {
+            if ($("#slt_version").get(0).selectedIndex == 0) {
+                alert("请选择正确的版本!!!")
+                return
+            }
+            var func_name = 'version='
+            var options=$("#slt_version option:selected");
+            var logContent = $('.ret_str').val()
+            logContent = btoa(encodeURIComponent(logContent));
+            paramJson = $('.pack_config').val()
+            //alert(paramJson)
+            if (!isJSON(paramJson)) {
+                alert("请检查是否是合法的json格式")
+                return
+            }
+            console.log(logContent)
+            func_name += options.val()
+            func_name += "&configJson="
+            func_name += paramJson
+            func_name += "&logContent="
+            func_name += logContent
+            //alert(logContent)
+            console.log("---------------------------------------")
+            console.log(func_name)
+
+            //func_name = btoa(encodeURIComponent(func_name));
+            $.post(change_log_url, func_name, function(data){
+                old_log = data["info"]
+                $('.ret_str').val(old_log)
+            });
+
+        }
+
+        // 查询对应版本的修改日志
+        function funcChanged(tx){
+            if ($("#slt_version").get(0).selectedIndex == 0) {
+                alert("请选择正确的版本!!!")
+                return
+            }
+            var func_name = 'version='
+            var options=$("#slt_version option:selected");
+
+            paramJson = $('.pack_config').val()
+            if (!isJSON(paramJson)) {
+                alert("请检查是否是合法的json格式")
+                return
+            }
+            func_name += options.val()
+            func_name += "&configJson="
+            func_name += paramJson
+            $.post(read_log_url, func_name, function(data){
+                old_log = data["info"]
+                $('.ret_str').val(old_log)
+            });
+		}
+    </script>
+    <style type="text/css">
+        html,body{
+            height:100%;
+        }
+        textarea {
+            resize: none;
+        }
+        .yongyin {
+            width:100px;
+            text-align:center;
+            line-height:100%;
+            padding:0.3em;
+            font:16px Arial,sans-serif bold;
+            font-style:normal;
+            text-decoration:none;
+            margin:0px;
+            vertical-align:text-bottom;
+            zoom:1;
+            outline:none;
+            font-size-adjust:none;
+            font-stretch:normal;
+            border-radius:50px;
+            box-shadow:0px 1px 2px rgba(0,0,0,0.2);
+            text-shadow:0px 1px 1px rgba(0,0,0,0.3);
+            color:#080808;
+            border:0.2px solid #acaaa9;
+            background-repeat:repeat;
+            background-size:auto;
+            background-origin:padding-box;
+            background-clip:padding-box;
+            background-color:#8f9092;
+            background: linear-gradient(to bottom, #eeeff9 0%,#868788 100%);
+        }
+    
+        .yongyin:hover {
+            background: rgb(174, 176, 177);
+        }
+    </style>
+    <head>
+    <title>打包工具(made by sleeping)</title> 
+    </head>
+    <body>
+        <div id="container">
+
+            <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
+            <h1 style="margin-bottom:0;">热眸自动打包工具</h1></div>
+            <div id="nav">
+                <label>打包配置: </label>
+                <select id="slt_version" onchange="funcChanged(this.options[this.options.selectedIndex].text);">
+                <option value ="---default---">请选择发布版本</option>
+                <option value ="Nise_remou(ZH)_ReleaseNote.txt">热眸中文版</option>
+                <option value ="Nise_remou(EN)_ReleaseNote.txt">热眸英文版</option>
+                </select>
+                <label color="red">注:请不要在changeLog中写英文的';',会导致字符截断!!!</label>
+                <button class="yongyin" onclick="modifyLog();" style="width:100px;float:right;">修改发布日志</button>
+                <button class="yongyin" onclick="pack();" style="width:100px;float:right;">打包</button>
+            </div> 
+            <div id="section">
+                <div id="div_params" style="background-color:#EEEEEE;height:800px;width:34%;float:left;">
+                <textarea class="pack_config" style="height:100%;width:100%;float:left;"></textarea>
+                </div>
+
+                <div id="div_ret_str" style="background-color:rgb(114, 107, 107);height:800px;width:64%;float:right;">
+                <textarea class="ret_str" style="height:100%;width:100%;float:left;"></textarea>
+                </div>
+            </div>
+            
+            <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
+            版权 © csleeping@163.com
+            </div>
+        </div>
+
+  </body>
+</html>
