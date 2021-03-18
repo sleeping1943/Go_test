@@ -7,6 +7,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script>
     <script>
+        var get_last_rebuild_path ="Project/get_last_path"
+        
+        $(document).ready(function(){
+            set_default_rebuild_path()
+        });  
+
+        function set_default_rebuild_path() {
+            $.post(get_last_rebuild_path, function(data){
+                //alert(data["info"])
+                $('#project_path').val(data["info"])
+            });
+        }
+        
         function rebuild() {
             var path = $("#project_path").val()
             path = "path=" + path

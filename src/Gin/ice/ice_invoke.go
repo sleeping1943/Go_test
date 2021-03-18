@@ -65,7 +65,7 @@ func Invoke(iceFlag, funcName, inParams string) string {
 	// freeStr:回收C内存
 	syscall.Syscall(uintptr(freeStr),
 		nargs,
-		uintptr(ret),
+		uintptr(unsafe.Pointer(ret)),
 		0,
 		0)
 	return name

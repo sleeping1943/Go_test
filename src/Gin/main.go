@@ -1,12 +1,18 @@
 package main
 
 import (
+	"Gin/compress"
 	"Gin/conf"
+	"Gin/db"
 	"Gin/ice"
+	"Gin/pack"
 	_ "Gin/sln"
 	"Gin/tools"
 	"bufio"
+	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,10 +27,17 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
+	"github.com/piaohao/godis"
 )
 
 // RootPath : 项目根路径
 var RootPath string
+
+// RebuildPathKey : 重建工程的Redis key
+var RebuildPathKey = "VSRebuildPath"
+
+// IceShaKey : ice文件哈希值key
+var IceShaKey = "IceSha"
 
 var packConfigName = "remoupack.json"
 
@@ -33,6 +46,9 @@ var MapParams = make(map[string]map[string]string)
 
 // CmakeCmd : cmake生成vs2015工程命令
 var CmakeCmd = `cmake ../.. -G "Visual Studio 14 2015 Win64"`
+
+// ReleaseNotePath : 修改日志相对路径
+var ReleaseNotePath = "Documents/ReleaseNote.txt"
 
 // chVsPro : 通知vs工程文件创建完成，并打开工程
 var chVsPro = make(chan string)
@@ -46,21 +62,76 @@ var (
 	Error *log.Logger
 )
 
+// WeiXinUser : 微信用户信息
+type WeiXinUser struct {
+	Name   string
+	OpenID string
+}
+
+// KeyWord : 微信消息关键字信息
+type KeyWord struct {
+	Color string `json:"color"`
+	Value string `json:"value"`
+}
+
+// NewsData : 微信具体数据
+type NewsData struct {
+	First    KeyWord `json:"first"`
+	ProName  KeyWord `json:"keyword1"`
+	WorkInfo KeyWord `json:"keyword2"`
+	Progress KeyWord `json:"keyword3"`
+	Remark   KeyWord `json:"remark"`
+}
+
+// NewsParams : 微信消息参数信息
+type NewsParams struct {
+	ToUser     string   `json:"touser"`
+	TemplateID string   `json:"template_id"`
+	Data       NewsData `json:"data"`
+}
+
+// NotifyNews : 打包完成通知消息
+type NotifyNews struct {
+	URL    string     `json:"url"`
+	Params NewsParams `json:"param"`
+}
+
 // PackInfo : 打包exe程序配置
 type PackInfo struct {
-	RebuildPro  bool              `json:"rebuildPro"`
-	RebuildExe  bool              `json:"rebuildExe"`
-	ProjectPath string            `json:"projectPath"`
-	CodePath    string            `json:"codePath"`
-	BuildParams map[string]string `json:"buildParams"`
-	ExeName     string            `json:"exeName"`
-	PdbName     string            `json:"pdbName"`
-	NsiPath     string            `json:"nsiPath"`
-	NsiParams   map[string]string `json:"nsiParams"`
-	RebuildPack bool              `json:"rebuildPack"`
+	RebuildProComment         string            `json:"rebuildProComment"`
+	RebuildPro                bool              `json:"rebuildPro"`
+	RebuildExeComment         string            `json:"rebuildExeComment"`
+	RebuildExe                bool              `json:"rebuildExe"`
+	ProjectPathVersionComment string            `json:"projectPathVersionComment"`
+	ProjectPathEN             string            `json:"projectPathEN"`
+	ProjectPathZH             string            `json:"projectPathZH"`
+	ProjectPathComment        string            `json:"projectPathComment"`
+	ProjectPath               string            `json:"projectPath"`
+	CodePathComment           string            `json:"codePathComment"`
+	CodePath                  string            `json:"codePath"`
+	BuildParamsComment        string            `json:"buildParamsComment"`
+	BuildParams               map[string]string `json:"buildParams"`
+	ExeNameComment            string            `json:"exeNameComment"`
+	ExeName                   string            `json:"exeName"`
+	PdbNameComment            string            `json:"pdbNameComment"`
+	PdbName                   string            `json:"pdbName"`
+	NsiPathComment            string            `json:"nsiPathComment"`
+	NsiPath                   string            `json:"nsiPath"`
+	NsiParamsComment          string            `json:"nsiParamsComment"`
+	NsiParams                 map[string]string `json:"nsiParams"`
+	RebuildPackComment        string            `json:"rebuildPackComment"`
+	RebuildPack               bool              `json:"rebuildPack"`
+
+	DefaultFrontendIPComment string       `json:"defaultFrontendIPComment"`
+	DefaultFrontendIP        string       `json:"defaultFrontendIP"`
+	TemplateID               string       `json:"templateID"`
+	NotifyProxy              string       `json:"notifyProxy"`
+	WeiXinUsers              []WeiXinUser `json:"weixinUsers"`
+	WeiXInURL                string       `json:"weixinurl"`
 }
 
 var defaultPackInfo PackInfo
+var pool *godis.Pool
 
 func init() {
 	errFile, err := os.OpenFile("./errors.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -123,6 +194,103 @@ func ReciveCh() {
 	}()
 }
 
+func autoPack(isZh bool) {
+	// 解析配置文件
+	byteContent, err := ioutil.ReadFile(pack.ProFilePath)
+	if err != nil {
+		color.Red(fmt.Sprintf("read file err,fileName:%s\n", pack.ProFilePath))
+	}
+	err = json.Unmarshal(byteContent, &(pack.ProInfo))
+	if err != nil {
+		color.Red(err.Error())
+		return
+	}
+	codePath := pack.ProInfo.CodePath
+	color.HiGreen("step1: 重新生成工程文件")
+	if pack.ProInfo.RebuildPro {
+		buildErr := pack.Rebuild(codePath)
+		if buildErr != nil {
+			log.Fatalln(buildErr.Error())
+		}
+	} else {
+		color.Blue("    配置为不重新生成")
+	}
+	buildPath := fmt.Sprintf("%s/%s", codePath, pack.SlnPath)
+	color.HiGreen("step2: 重编可执行程序")
+	if pack.ProInfo.RebuildExe {
+		errcode, msg := pack.CompileExecute(codePath, buildPath)
+		if errcode != 0 {
+			fmt.Println("compile Execute error:", msg)
+		}
+	} else {
+		color.Blue("    配置为不重新编译")
+	}
+	color.HiGreen("step3: 拷贝配置文件到发布文件夹backend/Business/process/default/")
+	pack.CopyFiles(pack.DefaultConfigPath, pack.DefaultPackConfigPath)
+
+	color.HiGreen("step4: 拷贝sql文件到发布文件夹backend/MySQLScript")
+	pack.CopyFiles(pack.DefaultSQLFilePath, pack.PackSQLFilePath)
+
+	color.HiGreen("step5: 拷贝可执行文件到发布文件夹backend/Business/process/")
+	errCode, errMsg := pack.CopyExe(pack.ExePath, pack.SaasExePath, pack.ProInfo.ExeName)
+	if errCode != 0 {
+		color.HiRed(errMsg)
+	}
+	errCode, errMsg = pack.CopyExe(pack.ExePath, pack.SaasExePath, pack.ProInfo.PdbName)
+	if errCode != 0 {
+		color.HiRed(errMsg)
+	}
+
+	color.Green("step6: 修改打包的Fronted中配置文件的默认ip为'127.0.0.1'")
+	errCode, errMsg = pack.ModifyFrontedDefaultIP(pack.ProInfo.ProPath + "/Frontend/Frontend/configFile.js")
+	if errCode != 0 {
+		color.HiRed(errMsg)
+	}
+
+	color.Green("step7: 修改打包的nsi文件内容")
+	errCode, errMsg = pack.ModifyNsiParams(pack.ProInfo.NsiPath, isZh)
+	if errCode != 0 {
+		color.HiRed(errMsg)
+	}
+
+	color.Green("step8: 打包发布的所有文件成一个exe文件")
+	if pack.ProInfo.Repack {
+		errCode, errMsg = pack.PackExec(pack.ProInfo.NsiPath)
+		if errCode != 0 {
+			color.HiRed(errMsg)
+		}
+	}
+
+	//color.Green("step9: 发送通知，打包完成")
+	//errCode, errMsg = pack.SendWXNews()
+	//if errCode != 0 {
+	//	color.HiRed(errMsg)
+	//}
+}
+
+// getShaSum : 获取指定内容的哈希值
+func getShaSum(content []byte) string {
+	shaEncoder := sha256.New()
+	shaEncoder.Write(content)
+	retByte := shaEncoder.Sum(nil)
+	return hex.EncodeToString(retByte)
+}
+
+// isSameShaSum : 检测ice文件内容是否更改过
+func isSameShaSum(checkRet string) bool {
+	isChanged := true
+	redis, _ := pool.GetResource()
+	defer redis.Close()
+	lastCheckSum, err := redis.Get(IceShaKey)
+	if err != nil {
+		color.RedString("Set redis cache error:", err.Error())
+	}
+	if checkRet != lastCheckSum {
+		isChanged = false
+	}
+	return isChanged
+}
+
 func defineStatic(router *gin.Engine) {
 	router.StaticFile("/", "./static/index.html")
 	router.StaticFile("/Ice", "./static/Ice.html")
@@ -132,6 +300,7 @@ func defineStatic(router *gin.Engine) {
 	router.StaticFile("/Upload", "./static/upload.html")
 	router.StaticFile("/Order", "./static/order.html")
 	router.StaticFile("/Pack", "./static/pack.html")
+	router.StaticFile("/Compress", "./static/compress.html")
 }
 
 func defineService(router *gin.Engine) {
@@ -320,15 +489,20 @@ func defineUpload(router *gin.Engine) {
 				content = append(content, line)
 			}
 		}
-		// 目标文件内从转为utf8编码
-		utf8Content := strings.Join(content, "\r\n")
-		utf8Content = tools.TransUTF8(utf8Content)
-		mapFunc := make(map[string]string)
-		content = strings.Split(utf8Content, "\r\n")
-		ice.CustomizeFuncs.ParseIceByFile(content, mapFunc)
-		ice.CustomizeFuncs.ParseParamsByFile(content, mapFunc)
-		clientIP := c.ClientIP()
-		MapParams[clientIP] = mapFunc
+		strContent := strings.Join(content, "")
+		byteContent := []byte(strContent)
+		shaSum := getShaSum(byteContent)
+		if !isSameShaSum(shaSum) { // 若此次ice文件sha值和上次不一样，则文件改动过，解析之
+			utf8Content := strings.Join(content, "\r\n")
+			utf8Content = tools.TransUTF8(utf8Content) // 目标文件内从转为utf8编码
+			mapFunc := make(map[string]string)
+			content = strings.Split(utf8Content, "\r\n")
+			ice.CustomizeFuncs.ParseIceByFile(content, mapFunc)
+			ice.CustomizeFuncs.ParseParamsByFile(content, mapFunc)
+			MapParams[c.ClientIP()] = mapFunc
+			redis, _ := pool.GetResource()
+			redis.Set(IceShaKey, shaSum)
+		}
 		//fmt.Println(clientIP)
 		// 返回自定义页面
 		c.File("./static/customize.html")
@@ -342,6 +516,15 @@ func defineProject(router *gin.Engine) {
 			path := c.PostForm("path")
 			path = strings.Replace(path, "\\", "/", -1)
 			retStr := "成功-" + time.Now().Format("2006-01-02 15:04:05")
+			// 缓存此次文件目录到redis
+			{
+				redis, _ := pool.GetResource()
+				defer redis.Close()
+				_, err := redis.Set(RebuildPathKey, path)
+				if err != nil {
+					color.RedString("Set redis cache error:", err.Error())
+				}
+			}
 			// 检车文件目录是否存在
 			// 然后删除builds/vs2015文件夹下的所有文件
 			// 创建build/vs2015文件夹
@@ -424,6 +607,24 @@ func defineProject(router *gin.Engine) {
 				"info": retStr,
 			})
 		})
+		project.POST("/get_last_path", func(c *gin.Context) {
+			// 从Redis获取上次的工程路径
+			retStr := ""
+			{
+				redis, _ := pool.GetResource()
+				defer redis.Close()
+				lastRebuildPath, err := redis.Get(RebuildPathKey)
+				if err != nil {
+					color.RedString("Get redis cache error:", err.Error())
+				} else {
+					retStr = lastRebuildPath
+				}
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": 0,
+				"info": retStr,
+			})
+		})
 	}
 }
 
@@ -433,6 +634,11 @@ func definePack(router *gin.Engine) {
 		packEngine.POST("/remou", func(c *gin.Context) {
 			var retStr = "Successfully"
 			for {
+				var isZh = true
+				version := c.PostForm("version")
+				if version == "EN" {
+					isZh = false
+				}
 				configJSON := c.PostForm("configJson")
 				var byteConfigJSON = []byte(configJSON)
 				err := json.Unmarshal(byteConfigJSON, &defaultPackInfo)
@@ -441,7 +647,7 @@ func definePack(router *gin.Engine) {
 					break
 				}
 
-				fmt.Printf("%v\n", defaultPackInfo)
+				//fmt.Printf("%v\n", defaultPackInfo)
 				file, err := os.Open("./" + packConfigName)
 				if err != nil {
 					retStr = err.Error()
@@ -455,20 +661,50 @@ func definePack(router *gin.Engine) {
 				}
 				// 异步开启打包程序
 				go func() {
-					cmd := exec.Command("./pack/remoupack.exe")
-					err := cmd.Run()
-					if err != nil {
-						retStr := err.Error()
-						fmt.Println("Command Run error:", retStr)
-						return
-					}
-					//output, err := cmd.Output()
+					packTime := time.Now().Format("2006-01-02 15:04:05")
+					autoPack(isZh)
+					//cmd := exec.Command("./pack/remoupack.exe")
+					//err := cmd.Run()
 					//if err != nil {
 					//	retStr := err.Error()
-					//	fmt.Println("Command Output error:", retStr)
+					//	fmt.Println("Command Run error:", retStr)
 					//	return
 					//}
-					//fmt.Printf("output:%v\n", output)
+
+					exeName, isExists := defaultPackInfo.NsiParams["product_file_name"]
+					if !isExists {
+						exeName = "热眸"
+					}
+					var notifyNews NotifyNews
+					notifyNews.URL = defaultPackInfo.WeiXInURL
+					notifyNews.Params.TemplateID = defaultPackInfo.TemplateID
+					notifyNews.Params.Data.First = KeyWord{"#173177", "自动打包通知"}
+					notifyNews.Params.Data.ProName = KeyWord{"#173177", exeName + ".exe"}
+					notifyNews.Params.Data.WorkInfo = KeyWord{"#173177", "完成"}
+					notifyNews.Params.Data.Progress = KeyWord{"#173177", "开始打包时间[" + packTime + "]"}
+					notifyNews.Params.Data.Remark = KeyWord{"#173177", "如有问题，咨询sleeping"}
+					for _, userID := range defaultPackInfo.WeiXinUsers {
+						notifyNews.Params.ToUser = userID.OpenID
+						byteNews, err := json.Marshal(notifyNews)
+						if err != nil {
+							retStr := err.Error()
+							fmt.Println("json Marshal error:", retStr)
+							continue
+						}
+
+						// 打包成功后发送微信消息
+						//color.HiYellow(fmt.Sprintf("WeiXinUsers:%v\n", defaultPackInfo.WeiXinUsers))
+						//color.HiGreen(fmt.Sprintf("Proxy:%s\n, content:%s\n", defaultPackInfo.NotifyProxy, string(byteNews)))
+						resp, err := http.Post(defaultPackInfo.NotifyProxy, "application/json", bytes.NewBuffer(byteNews))
+						if err != nil {
+							retStr := err.Error()
+							fmt.Println("http post error:", retStr)
+							return
+						}
+						defer resp.Body.Close()
+						result, _ := ioutil.ReadAll(resp.Body)
+						color.HiRed(fmt.Sprintf("config:%v\nresult:%v\n", defaultPackInfo, string(result)))
+					}
 				}()
 
 				break
@@ -494,11 +730,12 @@ func definePack(router *gin.Engine) {
 
 		packEngine.POST("/changeLog", func(c *gin.Context) {
 			var retStr = "修改日志成功"
+		Loop:
 			for {
 				version := c.PostForm("version")
 				configJSON := c.PostForm("configJson")
 				logContent := c.PostForm("logContent")
-				color.HiRed(fmt.Sprintf("logConent:%s\n", logContent))
+				//color.HiRed(fmt.Sprintf("logConent:%s\n", logContent))
 				byteLogContent, err := base64.StdEncoding.DecodeString(logContent)
 				if err != nil {
 					retStr = err.Error()
@@ -509,7 +746,7 @@ func definePack(router *gin.Engine) {
 					retStr = err.Error()
 					break
 				}
-				color.HiGreen(logContent)
+				//color.HiGreen(logContent)
 				var byteConfigJSON = []byte(configJSON)
 				err = json.Unmarshal(byteConfigJSON, &defaultPackInfo)
 				if err != nil {
@@ -517,7 +754,19 @@ func definePack(router *gin.Engine) {
 					break
 				}
 
-				logFileName := defaultPackInfo.ProjectPath + "/" + version
+				logFileName := ""
+				switch version {
+				case "ZH": // 中文版
+					logFileName = fmt.Sprintf("%s/%s", defaultPackInfo.ProjectPathZH, ReleaseNotePath)
+					break
+				case "EN": // 英文版
+					logFileName = fmt.Sprintf("%s/%s",
+						defaultPackInfo.ProjectPathEN, ReleaseNotePath)
+					break
+				default: // 未知版本
+					retStr = "Unknow version"
+					break Loop
+				}
 				err = ioutil.WriteFile(logFileName, []byte(logContent), os.ModePerm)
 				if err != nil {
 					retStr = err.Error()
@@ -534,6 +783,8 @@ func definePack(router *gin.Engine) {
 
 		packEngine.POST("/readLog", func(c *gin.Context) {
 			var retStr = "Successfully"
+			var jsonConfig = "{}"
+		Loop:
 			for {
 				version := c.PostForm("version")
 				configJSON := c.PostForm("configJson")
@@ -543,8 +794,22 @@ func definePack(router *gin.Engine) {
 					retStr = err.Error()
 					break
 				}
-
-				logFileName := defaultPackInfo.ProjectPath + "/" + version
+				logFileName := ""
+				switch version {
+				case "ZH": // 中文版
+					logFileName = fmt.Sprintf("%s/%s",
+						defaultPackInfo.ProjectPathZH, ReleaseNotePath)
+					defaultPackInfo.ProjectPath = defaultPackInfo.ProjectPathZH
+					break
+				case "EN": // 英文版
+					logFileName = fmt.Sprintf("%s/%s",
+						defaultPackInfo.ProjectPathEN, ReleaseNotePath)
+					defaultPackInfo.ProjectPath = defaultPackInfo.ProjectPathEN
+					break
+				default: // 未知版本
+					retStr = "Unknow version"
+					break Loop
+				}
 
 				byteContent, err := ioutil.ReadFile(logFileName)
 				if err != nil {
@@ -552,11 +817,18 @@ func definePack(router *gin.Engine) {
 					break
 				}
 				retStr = string(byteContent)
+				byteJSONConfig, err := json.MarshalIndent(defaultPackInfo, "", "\t")
+				jsonConfig = string(byteJSONConfig)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
 				break
 			}
 			c.JSON(http.StatusOK, gin.H{
-				"code": 0,
-				"info": retStr,
+				"code":   0,
+				"info":   retStr,
+				"config": jsonConfig,
 			})
 		})
 	}
@@ -567,6 +839,63 @@ func defineOther(router *gin.Engine) {
 	router.StaticFile("/Video", "./conf/video.json")
 }
 
+func defineTest(router *gin.Engine) {
+	testEngine := router.Group("/test")
+	testEngine.GET("/1", func(c *gin.Context) {
+		var retStr = "Successfully test/1 sleep 10 seconds"
+		var jsonConfig = "{}"
+		time.Sleep(10 * time.Second)
+		c.JSON(http.StatusOK, gin.H{
+			"code":   0,
+			"info":   retStr,
+			"config": jsonConfig,
+		})
+	})
+	testEngine.GET("/2", func(c *gin.Context) {
+		var retStr = "Successfully test/2"
+		var jsonConfig = "{}"
+		c.JSON(http.StatusOK, gin.H{
+			"code":   0,
+			"info":   retStr,
+			"config": jsonConfig,
+		})
+	})
+}
+
+func defineDb(router *gin.Engine) {
+	testEngine := router.Group("/db")
+	testEngine.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"code": 0,
+			"info": db.TestRead(),
+		})
+	})
+}
+
+func defineCompress(router *gin.Engine) {
+	testEngine := router.Group("/Compress")
+	testEngine.POST("/newer", func(c *gin.Context) {
+		retStr := ""
+		compressPath := c.PostForm("compress_path")
+		if len(compressPath) <= 0 {
+			color.HiRed("compressPath is invalid:", compressPath)
+			retStr = fmt.Sprintf("compressPath error:%s", compressPath)
+		} else {
+			var dirNeedCompress []string
+			compressPath = strings.Replace(compressPath, "\\", "/", -1)
+			compress.CompressNewer(compressPath, &dirNeedCompress)
+			if len(dirNeedCompress) <= 0 {
+				retStr = "所有压缩文件都是最新的，无需重新压缩!"
+			} else {
+				retStr = fmt.Sprintf("共有%d个文件需要压缩", len(dirNeedCompress))
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": 0,
+			"info": retStr,
+		})
+	})
+}
 func defineRout(router *gin.Engine) {
 	defineStatic(router)
 	defineService(router)
@@ -576,6 +905,30 @@ func defineRout(router *gin.Engine) {
 	defineProject(router)
 	defineOther(router)
 	definePack(router)
+	defineTest(router)
+	defineDb(router)
+	defineCompress(router)
+}
+
+// cleanCache : 为防止程序停止后，redis中的缓存数据造成干扰，故启动时删除
+func cleanCache() {
+	redis, _ := pool.GetResource()
+	defer redis.Close()
+	delNum, err := redis.Del(IceShaKey)
+	if err != nil {
+		color.RedString("Set redis cache error:", err.Error())
+	} else {
+		color.RedString(fmt.Sprintf("Del %d key from redis!", delNum))
+	}
+}
+
+func init() {
+	option := &godis.Option{
+		Host: "localhost",
+		Port: 6379,
+		Db:   0,
+	}
+	pool = godis.NewPool(&godis.PoolConfig{}, option)
 }
 
 func main() {
@@ -584,6 +937,7 @@ func main() {
 		Error.Printf("获取当前目录出错:%s\n", err.Error())
 		return
 	}
+	cleanCache()
 	RootPath = rootPath
 	ReciveCh()
 	router := gin.Default()

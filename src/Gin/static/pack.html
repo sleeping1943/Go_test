@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
-
-<head>
-    <meta charset="utf-8">
+<!-- saved from url=(0029)http://192.168.2.77:5277/Pack -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+    <link rel="stylesheet" href="jquery.jsonview.css">
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
+    <script type="text/javascript" src="jquery.jsonview.js"></script>
     <script>
         var config_url = "Pack/config"
         var post_url="Pack/remou"
@@ -26,13 +27,23 @@
 
         // 发送打包命令
         function pack() {
+            if ($("#slt_version").get(0).selectedIndex == 0) {
+                alert("请选择正确的版本!!!")
+                return
+            }
             paramJson = $('.pack_config').val()
             //alert(paramJson)
             if (!isJSON(paramJson)) {
                 alert("请检查是否是合法的json格式")
                 return
             }
-            var params = "configJson=" + paramJson
+
+            var params = 'version='
+            var options=$("#slt_version option:selected");
+            params += options.val()
+            params += "&configJson="
+            params += paramJson
+            console.log(params)
             $.post(post_url, params, function(data){
                 json_str = data["info"]
                 $('.ret_str').val(json_str)
@@ -102,8 +113,8 @@
             func_name += "&configJson="
             func_name += paramJson
             $.post(read_log_url, func_name, function(data){
-                old_log = data["info"]
-                $('.ret_str').val(old_log)
+                $('.ret_str').val(data["info"])
+                $('.pack_config').val(data["config"])
             });
 		}
     </script>
@@ -145,39 +156,53 @@
             background: rgb(174, 176, 177);
         }
     </style>
-    <head>
+    
     <title>打包工具(made by sleeping)</title> 
     </head>
-    <body>
-        <div id="container">
+    <body style="
+    margin:0;
+    overflow-y: hidden;
+    overflow-x: hidden;
+">
+        <div id="container" style="
+    height: 97%;
+    position: relative;
+    /* top: 0; */
+">
 
-            <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
-            <h1 style="margin-bottom:0;">热眸自动打包工具</h1></div>
-            <div id="nav">
-                <label>打包配置: </label>
-                <select id="slt_version" onchange="funcChanged(this.options[this.options.selectedIndex].text);">
-                <option value ="---default---">请选择发布版本</option>
-                <option value ="Nise_remou(ZH)_ReleaseNote.txt">热眸中文版</option>
-                <option value ="Nise_remou(EN)_ReleaseNote.txt">热眸英文版</option>
+            <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;/* height: 5vh; */">
+            <h1 style="margin-bottom:0;margin: 0;">热眸自动打包工具</h1></div>
+            <div id="nav" style="
+    margin: 1.2vh 1vw 1.2vh 1vw;
+">
+                <label style="
+    vertical-align: middle;
+">打包配置: </label>
+                <select id="slt_version" onchange="funcChanged(this.options[this.options.selectedIndex].text);" style="
+    vertical-align: bottom;
+">
+                <option value="---default---">请选择发布版本</option>
+                <option value="ZH">热眸中文版</option>
+                <option value="EN">热眸英文版</option>
                 </select>
-                <label color="red">注:请不要在changeLog中写英文的';',会导致字符截断!!!</label>
                 <button class="yongyin" onclick="modifyLog();" style="width:100px;float:right;">修改发布日志</button>
-                <button class="yongyin" onclick="pack();" style="width:100px;float:right;">打包</button>
+                <button class="yongyin" onclick="pack();" style="width:100px;float:right;margin-right: 1vw;">打包</button>
             </div> 
             <div id="section">
-                <div id="div_params" style="background-color:#EEEEEE;height:800px;width:34%;float:left;">
+                <div id="div_params" style="background-color:#EEEEEE;height:800px;width:34%;float:left;position: absolute;left: 0.6vw;">
                 <textarea class="pack_config" style="height:100%;width:100%;float:left;"></textarea>
                 </div>
-
-                <div id="div_ret_str" style="background-color:rgb(114, 107, 107);height:800px;width:64%;float:right;">
+                <div id="div_ret_str" style="background-color:rgb(114, 107, 107);height: 800px;width:64%;float:right;right: 0.6vw;position: relative;">
                 <textarea class="ret_str" style="height:100%;width:100%;float:left;"></textarea>
                 </div>
             </div>
             
-            <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
+            
+        </div>
+<div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;position: absolute;bottom: 0;width: 100%;height: 3%;">
             版权 © csleeping@163.com
             </div>
-        </div>
 
-  </body>
-</html>
+  
+
+</body></html>

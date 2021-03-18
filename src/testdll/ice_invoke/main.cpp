@@ -23,7 +23,7 @@ DLL_API const char* invoke(const char* ice_str, const char* func_name, const cha
     ich = Ice::initialize(argc, argv);
     //Ice::ObjectPrx base = ic->stringToProxy("SimplePrinter:tcp -p 10000");
     Ice::ObjectPrx proxy = ich->stringToProxy(ice_str);
-    std::string* pout_str = new std::string();
+    std::string pout_str;
     try
     {
         std::vector<Ice::Byte> inParams, outParams;
@@ -38,24 +38,27 @@ DLL_API const char* invoke(const char* ice_str, const char* func_name, const cha
             // Handle success
             Ice::InputStream in(ich, outParams);
             in.startEncapsulation();
-            in.read(*pout_str);
+            in.read(pout_str);
             in.endEncapsulation();
         } 
     } catch(const Ice::LocalException& e) {
-        *pout_str = e.what();
-        cout << "Ice::LocalException:" << *pout_str;
+        pout_str = e.what();
+        cout << "Ice::LocalException:" << pout_str;
     } catch (std::exception& e) {
-        *pout_str = e.what();
-        cout << "exception:" << *pout_str;
+        pout_str = e.what();
+        cout << "exception:" << pout_str;
     }
     ich->destroy();
-    return (pout_str->data());
+    int str_len = pout_str.size() + 1;
+    char* content = new char[str_len];
+    strcpy_s(content, str_len, pout_str.c_str());
+    return content;
 }
 
-DLL_API void free_str(const char* pout_str)
+DLL_API void free_str(const char* content)
 {
-    if (pout_str != nullptr) {
-        delete pout_str;
-        pout_str = nullptr;
+    if (content != nullptr) {
+        delete []content;
+        content = nullptr;
     }
 }
