@@ -12,6 +12,7 @@
         var post_url="Pack/remou"
         var change_log_url="Pack/changeLog"
         var read_log_url="Pack/readLog"
+        var reset_dir_url="tools/reset_root_path"
         function isJSON(str) {
             if (typeof str == 'string') {
                 try {
@@ -23,6 +24,14 @@
                 }
             }
             console.log('It is not a string!')    
+        }
+
+        // 发送重置根目录命令
+        function reset_dir() {
+            $.post(reset_dir_url, "", function(data){
+                json_str = data["info"]
+                $('.ret_str').val(json_str)
+            });
         }
 
         // 发送打包命令
@@ -187,6 +196,7 @@
                 </select>
                 <button class="yongyin" onclick="modifyLog();" style="width:100px;float:right;">修改发布日志</button>
                 <button class="yongyin" onclick="pack();" style="width:100px;float:right;margin-right: 1vw;">打包</button>
+                <button class="yongyin" onclick="reset_dir();" style="width:100px;float:right;margin-right: 1vw;">重置根目录</button>
             </div> 
             <div id="section">
                 <div id="div_params" style="background-color:#EEEEEE;height:800px;width:34%;float:left;position: absolute;left: 0.6vw;">

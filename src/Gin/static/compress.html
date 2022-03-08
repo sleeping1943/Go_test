@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script>
+    <script>
+        function compress() {
+            var path = $("#project_path").val()
+            path = "compress_path=" + path
+            $.post("Compress/newer", path, function(data){
+                //json_data = JSON.parse(data["info"])
+                //alert(data["info"])
+                $('#ret_str').text(data["info"])
+            });
+        }
+     </script> 
+    <style type="text/css">
+        html,body{
+            height:100%;
+        }
+        textarea {
+            resize: none;
+        }
+        .yongyin {
+            width:100px;
+            text-align:center;
+            line-height:100%;
+            padding:0.3em;
+            font:16px Arial,sans-serif bold;
+            font-style:normal;
+            text-decoration:none;
+            margin:2px;
+            vertical-align:text-bottom;
+            zoom:1;
+            outline:none;
+            font-size-adjust:none;
+            font-stretch:normal;
+            border-radius:50px;
+            box-shadow:0px 1px 2px rgba(0,0,0,0.2);
+            text-shadow:0px 1px 1px rgba(0,0,0,0.3);
+            color:#080808;
+            border:0.2px solid #ff6122;
+            background-repeat:repeat;
+            background-size:auto;
+            background-origin:padding-box;
+            background-clip:padding-box;
+            background-color:#8f9092;
+            background: linear-gradient(to bottom, #eeeff9 0%,#868788 100%);
+        }
+    
+        .yongyin:hover {
+            background: rgb(174, 176, 177);
+        }
+    </style>
+    <head>
+    <title>压缩工具(made by sleeping)</title> 
+    </head>
+    <body>
+        <div id="container">
+
+            <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
+            <h1 style="margin-bottom:0;">压缩工具</h1></div>
+    
+            <div id="nav">
+                <label>请输入压缩路径:</label>
+                <input type="text" id="project_path">
+                <button class="yongyin" onclick="compress();" style="width:50px;">压缩</button>
+            </div> 
+            <div>结果:<label id="ret_str"></label></div>
+                <!--
+                    <a href="Upload">自定义入口</a>
+                -->
+            <div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;">
+            版权 © csleeping@163.com
+            </div>
+        </div>
+
+  </body>
+</html>

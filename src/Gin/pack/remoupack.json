@@ -1,0 +1,48 @@
+{
+	"rebuildProComment": "是否重新生成工程文件",
+	"rebuildPro": false,
+	"rebuildExeComment": "是否重新生成exe文件",
+	"rebuildExe": true,
+	"projectPathVersionComment": "打包的工程环境目录,zh(中文) en(英文)",
+	"projectPathEN": "E:/versions/remou_new/iThermoEye/backend",
+	"projectPathZH": "E:/versions/remou_new/iThermoEye/backend",
+	"projectPathComment": "最后的打包目录",
+	"projectPath": "E:/versions/remou_new/iThermoEye/backend",
+	"codePathComment": "工程源代码目录",
+	"codePath": "F:/Code/remou_trunk",
+	"buildParamsComment": "编译程序的参数",
+	"buildParams": {
+		"cmd": "devenv",
+		"mode": "Release",
+		"proName": "Business",
+		"slnName": "WiseEyes.sln"
+	},
+	"exeNameComment": "编译出的程序名",
+	"exeName": "Business.exe",
+	"pdbNameComment": "程序调试文件",
+	"pdbName": "Business.pdb",
+	"nsiPathComment": "打包的根目录,.nsi文件所在目录",
+	"nsiPath": "E:/versions/remou_new/iThermoEye/PackageScript",
+	"nsiParamsComment": "打包参数",
+	"nsiParams": {
+		"pack_name": "test.exe",
+		"pack_path": "E:/versions/remou_new/iThermoEye/backend",
+		"product_file_name": "iThermoEyeV3.7.3g",
+		"product_name_to_change": "iThermoEye",
+		"product_version_to_change": "3.7.3g",
+		"short_cut": "WiseEyes_128.ico"
+	},
+	"rebuildPackComment": "是否重新打包",
+	"rebuildPack": false,
+	"defaultFrontendIPComment": "使用此IP替换前端配置中的默认IP",
+	"defaultFrontendIP": "127.0.0.1",
+	"templateID": "Q08IvTT3q9RGPq9x60w1rdBGW2adwvWe5-AE45LgV-c",
+	"notifyProxy": "http://wx.nazhiai.com/sendData",
+	"weixinUsers": [
+		{
+			"Name": "sleeping",
+			"OpenID": "oyWhJuCzUANozldTDqqfywB_RZFQ"
+		}
+	],
+	"weixinurl": "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=nz123"
+}

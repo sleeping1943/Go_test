@@ -1,7 +1,7 @@
 package main
 
+// _ "Gin/compress"
 import (
-	"Gin/compress"
 	"Gin/conf"
 	"Gin/db"
 	"Gin/ice"
@@ -40,6 +40,8 @@ var RebuildPathKey = "VSRebuildPath"
 var IceShaKey = "IceSha"
 
 var packConfigName = "remoupack.json"
+
+var setupConfigName = "setup.json"
 
 // MapParams : 各个客户端上传缓存的参数信息 <ip, <funcName, funcParams>>
 var MapParams = make(map[string]map[string]string)
@@ -155,6 +157,16 @@ func init() {
 	}
 }
 
+// 打印当前项目根目录
+func printWd() {
+	curWorkDir, err := os.Getwd()
+	if err != nil {
+		fmt.Sprintf("获取当前目录出错:%s", err.Error())
+		return
+	}
+	fmt.Sprintf("当前目录:%s", curWorkDir)
+}
+
 // ReciveCh : ch接收器
 func ReciveCh() {
 	go func() {
@@ -253,19 +265,48 @@ func autoPack(isZh bool) {
 		color.HiRed(errMsg)
 	}
 
-	color.Green("step8: 打包发布的所有文件成一个exe文件")
 	if pack.ProInfo.Repack {
+		color.Green("step8: 打包发布的所有文件成一个exe文件")
 		errCode, errMsg = pack.PackExec(pack.ProInfo.NsiPath)
 		if errCode != 0 {
 			color.HiRed(errMsg)
 		}
 	}
+	// 重置根目录
+	err = os.Chdir(RootPath)
+	if err != nil {
+		color.HiRed("reset project dir error:" + err.Error())
+	}
+}
 
-	//color.Green("step9: 发送通知，打包完成")
-	//errCode, errMsg = pack.SendWXNews()
-	//if errCode != 0 {
-	//	color.HiRed(errMsg)
-	//}
+func autoPackMainExe(isZh bool) {
+	// 解析配置文件
+	confFilePath := "./" + setupConfigName
+	byteContent, err := ioutil.ReadFile(confFilePath)
+	if err != nil {
+		color.Red(fmt.Sprintf("read file err,fileName:%s\n", confFilePath))
+	}
+	err = json.Unmarshal(byteContent, &(pack.SetupInfo))
+	if err != nil {
+		color.Red(err.Error())
+		return
+	}
+	color.Green("step1: 修改打包的nsi文件内容")
+	errCode, errMsg := pack.ModifySetupNsiParams(pack.SetupInfo.NsiPath, isZh)
+	if errCode != 0 {
+		color.HiRed(errMsg)
+	}
+
+	color.Green("step2: 打包发布的所有文件成一个exe文件")
+	errCode, errMsg = pack.PackSetupExec(pack.SetupInfo.NsiPath)
+	if errCode != 0 {
+		color.HiRed(errMsg)
+	}
+	// 重置根目录
+	err = os.Chdir(RootPath)
+	if err != nil {
+		color.HiRed("reset project dir error:" + err.Error())
+	}
 }
 
 // getShaSum : 获取指定内容的哈希值
@@ -300,6 +341,7 @@ func defineStatic(router *gin.Engine) {
 	router.StaticFile("/Upload", "./static/upload.html")
 	router.StaticFile("/Order", "./static/order.html")
 	router.StaticFile("/Pack", "./static/pack.html")
+	router.StaticFile("/Setup", "./static/setup.html")
 	router.StaticFile("/Compress", "./static/compress.html")
 }
 
@@ -834,6 +876,92 @@ func definePack(router *gin.Engine) {
 	}
 }
 
+func defineSetup(router *gin.Engine) {
+	packEngine := router.Group("/Setup")
+	{
+		packEngine.POST("/config", func(c *gin.Context) {
+			byteConfig, err := ioutil.ReadFile("./" + setupConfigName)
+			var errcode = 0
+			if err != nil {
+				errcode = -1
+				Error.Println("get default setup config error:", err.Error())
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"code":   errcode,
+				"config": string(byteConfig),
+			})
+		})
+		packEngine.POST("/pack", func(c *gin.Context) {
+			var retStr = "Successfully"
+			for {
+				version := c.PostForm("version")
+				configJSON := c.PostForm("configJson")
+				var byteConfigJSON = []byte(configJSON)
+				err := json.Unmarshal(byteConfigJSON, &pack.SetupInfo)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				// 把前端传过来的json配置会写到本地配置文件
+				file, err := os.Open("./" + setupConfigName)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				defer file.Close()
+				err = ioutil.WriteFile("./"+setupConfigName, byteConfigJSON, os.ModePerm)
+				if err != nil {
+					retStr = err.Error()
+					break
+				}
+				// 异步开启打包程序
+				go func() {
+					packTime := time.Now().Format("2006-01-02 15:04:05")
+					autoPackMainExe(version == "ZH")
+					exeName, isExists := defaultPackInfo.NsiParams["product_file_name"]
+					if !isExists {
+						exeName = "热眸"
+					}
+					var notifyNews NotifyNews
+					notifyNews.URL = defaultPackInfo.WeiXInURL
+					notifyNews.Params.TemplateID = defaultPackInfo.TemplateID
+					notifyNews.Params.Data.First = KeyWord{"#173177", "自动打包通知"}
+					notifyNews.Params.Data.ProName = KeyWord{"#173177", exeName + ".exe"}
+					notifyNews.Params.Data.WorkInfo = KeyWord{"#173177", "完成"}
+					notifyNews.Params.Data.Progress = KeyWord{"#173177", "开始打包时间[" + packTime + "]"}
+					notifyNews.Params.Data.Remark = KeyWord{"#173177", "如有问题，咨询sleeping"}
+					for _, userID := range defaultPackInfo.WeiXinUsers {
+						notifyNews.Params.ToUser = userID.OpenID
+						byteNews, err := json.Marshal(notifyNews)
+						if err != nil {
+							retStr := err.Error()
+							fmt.Println("json Marshal error:", retStr)
+							continue
+						}
+
+						// 打包成功后发送微信消息
+						resp, err := http.Post(defaultPackInfo.NotifyProxy, "application/json", bytes.NewBuffer(byteNews))
+						if err != nil {
+							retStr := err.Error()
+							fmt.Println("http post error:", retStr)
+							return
+						}
+						defer resp.Body.Close()
+						result, _ := ioutil.ReadAll(resp.Body)
+						color.HiRed(fmt.Sprintf("config:%v\nresult:%v\n", defaultPackInfo, string(result)))
+					}
+				}()
+				break
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code": 0,
+				"info": retStr,
+			})
+		})
+	}
+}
+
 // 其余请求
 func defineOther(router *gin.Engine) {
 	router.StaticFile("/Video", "./conf/video.json")
@@ -872,6 +1000,33 @@ func defineDb(router *gin.Engine) {
 	})
 }
 
+func defineHelpFuncs(router *gin.Engine) {
+	helpEngine := router.Group("/tools")
+	helpEngine.POST("/reset_root_path", func(c *gin.Context) {
+		_, err := os.Stat(RootPath)
+		retStr := "reset RootPath:" + RootPath + " Successfully"
+		for {
+			if err != nil {
+				retStr = fmt.Sprintf("The RootPath[%s] is not exists", RootPath)
+				color.RedString(retStr)
+				break
+			}
+			err = os.Chdir(RootPath)
+			if err != nil {
+				retStr := fmt.Sprintf("Chdir RootPath[%s] error", RootPath)
+				color.RedString(retStr)
+				break
+			}
+			break
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": 0,
+			"info": retStr,
+		})
+	})
+}
+
+/*
 func defineCompress(router *gin.Engine) {
 	testEngine := router.Group("/Compress")
 	testEngine.POST("/newer", func(c *gin.Context) {
@@ -896,6 +1051,7 @@ func defineCompress(router *gin.Engine) {
 		})
 	})
 }
+*/
 func defineRout(router *gin.Engine) {
 	defineStatic(router)
 	defineService(router)
@@ -905,9 +1061,11 @@ func defineRout(router *gin.Engine) {
 	defineProject(router)
 	defineOther(router)
 	definePack(router)
+	defineSetup(router)
 	defineTest(router)
 	defineDb(router)
-	defineCompress(router)
+	defineHelpFuncs(router)
+	//defineCompress(router)
 }
 
 // cleanCache : 为防止程序停止后，redis中的缓存数据造成干扰，故启动时删除
@@ -937,6 +1095,7 @@ func main() {
 		Error.Printf("获取当前目录出错:%s\n", err.Error())
 		return
 	}
+	color.GreenString("当前工作目录:%s\n", rootPath)
 	cleanCache()
 	RootPath = rootPath
 	ReciveCh()

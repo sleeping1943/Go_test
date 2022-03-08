@@ -1,0 +1,26 @@
+{
+    "rebuildProComment":"是否重新生成工程文件",
+    "rebuildPro":false,
+    "rebuildExeComment":"是否重新生成exe文件",
+    "rebuildExe":true,
+    "projectPathComment":"打包的工程环境目录",
+    "projectPath":"D:/versions/guiyang_version/Nise_SWS/guiyang_mobile",
+    "codePathComment":"工程源代码目录",
+    "codePath":"F:/Code/guiyang",
+    "buildParams":{
+        "cmd":"devenv",
+        "slnName":"NiseSaas.sln",
+        "mode":"Release",
+        "proName":"saas"
+    },
+    "exeName":"SaaS.exe",
+    "pdbName":"SaaS.pdb",
+    "nsiPath":"D:/versions",
+    "nsiParams":{
+        "short_cut":"nzai.ico",
+        "pack_name":"nzai_V1.0.1.exe",
+        "pack_path":"D:/versions/guiyang_version/Nise_SWS/guiyang_mobile",
+        "product_name_to_change":"nzai",
+        "product_version_to_change":"1.0.0.1"
+    }
+}

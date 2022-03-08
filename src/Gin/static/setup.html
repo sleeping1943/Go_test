@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!-- saved from url=(0029)http://192.168.2.77:5277/Pack -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+    <link rel="stylesheet" href="jquery.jsonview.css">
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"> </script> 
+    <script type="text/javascript" src="jquery.jsonview.js"></script>
+    <script>
+        var config_url = "Setup/config"
+        var post_url="Setup/pack"
+        var reset_dir_url="tools/reset_root_path"
+        function isJSON(str) {
+            if (typeof str == 'string') {
+                try {
+                    JSON.parse(str);
+                    return true;
+                } catch(e) {
+                    console.log(e);
+                    return false;
+                }
+            }
+            console.log('It is not a string!')    
+        }
+
+        // 发送打包命令
+        function pack() {
+            if ($("#slt_version").get(0).selectedIndex == 0) {
+                alert("请选择正确的版本!!!")
+                return
+            }
+            paramJson = $('.pack_config').val()
+            //alert(paramJson)
+            if (!isJSON(paramJson)) {
+                alert("请检查是否是合法的json格式")
+                return
+            }
+
+            var params = 'version='
+            var options=$("#slt_version option:selected");
+            params += options.val()
+            params += "&configJson="
+            params += paramJson
+            console.log(params)
+            $.post(post_url, params, function(data){
+                json_str = data["info"]
+                $('.ret_str').val(json_str)
+            });
+        }
+
+        // 获取默认配置
+        function get_default_pack_config() {
+            $.post(config_url, "project=saida", function(data){
+                json_str = data["config"]
+                $('.pack_config').val(json_str)
+            });
+        }
+        $(document).ready(function(){
+            get_default_pack_config()
+        });  
+    </script>
+    <style type="text/css">
+        html,body{
+            height:100%;
+        }
+        textarea {
+            resize: none;
+        }
+        .yongyin {
+            width:100px;
+            text-align:center;
+            line-height:100%;
+            padding:0.3em;
+            font:16px Arial,sans-serif bold;
+            font-style:normal;
+            text-decoration:none;
+            margin:0px;
+            vertical-align:text-bottom;
+            zoom:1;
+            outline:none;
+            font-size-adjust:none;
+            font-stretch:normal;
+            border-radius:50px;
+            box-shadow:0px 1px 2px rgba(0,0,0,0.2);
+            text-shadow:0px 1px 1px rgba(0,0,0,0.3);
+            color:#080808;
+            border:0.2px solid #acaaa9;
+            background-repeat:repeat;
+            background-size:auto;
+            background-origin:padding-box;
+            background-clip:padding-box;
+            background-color:#8f9092;
+            background: linear-gradient(to bottom, #eeeff9 0%,#868788 100%);
+        }
+    
+        .yongyin:hover {
+            background: rgb(174, 176, 177);
+        }
+    </style>
+    
+    <title>打包工具(made by sleeping)</title> 
+    </head>
+    <body style="
+    margin:0;
+    overflow-y: hidden;
+    overflow-x: hidden;
+">
+        <div id="container" style="
+    height: 97%;
+    position: relative;
+    /* top: 0; */
+">
+
+            <div id="header" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;/* height: 5vh; */">
+            <h1 style="margin-bottom:0;margin: 0;">热眸主安装程序打包工具</h1></div>
+            <div id="nav" style="
+    margin: 1.2vh 1vw 1.2vh 1vw;
+">
+                <label style=" vertical-align: middle; ">打包配置: </label>
+                <select id="slt_version" onchange="funcChanged(this.options[this.options.selectedIndex].text);" style="
+                    vertical-align: bottom;">
+                    <option value="---default---">请选择发布版本</option>
+                    <option value="ZH">热眸中文版</option>
+                    <option value="EN">热眸英文版</option>
+                </select>
+                <button class="yongyin" onclick="pack();" style="width:100px;float:right;margin-right: 1vw;">打包</button>
+            </div> 
+            <div id="section">
+                <div id="div_params" style="background-color:#EEEEEE;height:800px;width:34%;float:left;position: absolute;left: 0.6vw;">
+                <textarea class="pack_config" style="height:100%;width:100%;float:left;"></textarea>
+                </div>
+                <div id="div_ret_str" style="background-color:rgb(114, 107, 107);height: 800px;width:64%;float:right;right: 0.6vw;position: relative;">
+                <textarea class="ret_str" style="height:100%;width:100%;float:left;"></textarea>
+                </div>
+            </div>
+            
+            
+        </div>
+<div id="footer" style="background-color:rgb(149, 149, 147);clear:both;text-align:center;position: absolute;bottom: 0;width: 100%;height: 3%;">
+            版权 © csleeping@163.com
+            </div>
+
+  
+
+</body></html>
